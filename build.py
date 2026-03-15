@@ -63,8 +63,11 @@ SKIP_FILES = {
 }
 
 
+RECIPE_EXTENSIONS = {".doc", ".docx", ".odt", ".rtf"}
+
+
 def read_doc(path):
-    """Use macOS textutil to extract plain text from a .doc file."""
+    """Use macOS textutil to extract plain text from a recipe file (.doc, .docx, .odt, .rtf)."""
     result = subprocess.run(
         ["textutil", "-convert", "txt", "-stdout", path],
         capture_output=True, text=True
@@ -133,9 +136,10 @@ def load_cookbook():
         cat_path = os.path.join(RECIPES_DIR, cat)
         recipes = []
         for fname in sorted(os.listdir(cat_path)):
-            if not fname.endswith(".doc"):
+            root, ext = os.path.splitext(fname)
+            if ext.lower() not in RECIPE_EXTENSIONS:
                 continue
-            name = fname[:-4]
+            name = root
             if name in SKIP_FILES:
                 continue
             text = read_doc(os.path.join(cat_path, fname))
