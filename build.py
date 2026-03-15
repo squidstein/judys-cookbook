@@ -2,34 +2,27 @@
 """
 Judy's Cookbook — Site Builder
 ================================
-Reads recipe .txt files from the recipes/ folder and generates index.html.
+Reads .doc recipe files from the recipes/ folder (symlinked to iCloud)
+and generates index.html.
+
+recipes/ is a symlink to:
+  ~/Library/Mobile Documents/com~apple~CloudDocs/Documents/
+  Personal - Reading and Interests/Mom's Cookbook/Cookbook
 
 Usage:
     python3 build.py
 
-To add or edit a recipe:
-    - Edit (or add) a .txt file in the appropriate recipes/<Category>/ folder
-    - Run this script
-    - Commit and push → Netlify auto-deploys
+Workflow:
+    1. Judy edits a recipe in Google Docs → it syncs to iCloud automatically
+    2. Run: python3 build.py
+    3. Run: git add index.html && git commit -m "update recipes" && git push
+    4. Netlify serves the updated site within ~30 seconds
 
-Recipe file format:
-    # Recipe Name
-
-    From: Source name   Prep: 30 min   Yield: 4 servings
-
-    INGREDIENTS
-
-    - ingredient 1
-    - ingredient 2
-
-    INSTRUCTIONS
-
-    Step one text here.
-
-    Step two text here.
+Note: build.py requires macOS (uses textutil to read .doc files).
+      index.html is committed to git so Netlify just serves it as a static file.
 """
 
-import os, json, re
+import os, json, re, subprocess
 
 RECIPES_DIR = os.path.join(os.path.dirname(__file__), "recipes")
 OUTPUT_FILE = os.path.join(os.path.dirname(__file__), "index.html")
@@ -63,41 +56,56 @@ CATEGORY_ORDER = [
 ]
 
 
-def parse_txt(name, text):
-    """Parse a recipe .txt file into structured data."""
-    lines = text.splitlines()
-    # Strip title line (# Name)
-    if lines and lines[0].startswith("#"):
-        lines = lines[1:]
+SKIP_FILES = {
+    "Cover Sheet", "Doc1", "Labels - Cookbook", "Label for Spices",
+    "Label for Spices 2", "Side tabs", "Spices - Aaron", "Spices - Another",
+    "Spices - Camila", "Spices - Camila 1", "Spices - Camila 2", "Buttercup Icing",
+}
+
+
+def read_doc(path):
+    """Use macOS textutil to extract plain text from a .doc file."""
+    result = subprocess.run(
+        ["textutil", "-convert", "txt", "-stdout", path],
+        capture_output=True, text=True
+    )
+    return result.stdout.strip()
+
+
+def parse_doc(name, text):
+    """Parse plain text extracted from a .doc file into structured recipe data."""
+    lines = [l.strip() for l in text.splitlines() if l.strip()]
 
     ing_idx = inst_idx = None
     for i, l in enumerate(lines):
-        if re.match(r"^INGREDIENTS?\s*$", l.strip(), re.I):
+        if re.match(r"^INGREDIENTS?\s*$", l, re.I):
             ing_idx = i
-        if re.match(r"^INSTRUCTIONS?\s*$|^DIRECTIONS?\s*$|^METHOD\s*$", l.strip(), re.I):
+        if re.match(r"^INSTRUCTIONS?\s*$|^DIRECTIONS?\s*$|^METHOD\s*$", l, re.I):
             inst_idx = i
 
-    # Meta: everything before INGREDIENTS (excluding blanks at start)
+    # Meta: lines before INGREDIENTS, excluding the recipe title and padding
     meta_end = ing_idx if ing_idx is not None else (inst_idx if inst_idx is not None else len(lines))
-    meta = [l.strip() for l in lines[:meta_end] if l.strip()]
+    meta = []
+    for l in lines[1:meta_end]:
+        if l.lower() == name.lower(): continue
+        if len(l) > 150: continue  # skip formatting padding
+        meta.append(l)
 
     # Ingredients
     ingredients = []
     if ing_idx is not None:
         end = inst_idx if inst_idx is not None else len(lines)
         for l in lines[ing_idx + 1:end]:
-            s = l.strip().lstrip("- ").strip()
-            if s:
-                ingredients.append(s)
+            if l and len(l) < 200:
+                ingredients.append(l)
 
-    # Instructions — join short consecutive lines into paragraphs
+    # Instructions — group consecutive non-blank lines into steps
     instructions = []
     if inst_idx is not None:
         current = []
         for l in lines[inst_idx + 1:]:
-            s = l.strip()
-            if s:
-                current.append(s)
+            if l:
+                current.append(l)
             else:
                 if current:
                     instructions.append(" ".join(current))
@@ -116,8 +124,8 @@ def parse_txt(name, text):
 def load_cookbook():
     cookbook = {}
     available = [d for d in os.listdir(RECIPES_DIR)
-                 if os.path.isdir(os.path.join(RECIPES_DIR, d))]
-    # Sort by preferred order, then alphabetically for any extras
+                 if os.path.isdir(os.path.join(RECIPES_DIR, d))
+                 and not d.startswith(".")]
     ordered = [c for c in CATEGORY_ORDER if c in available]
     ordered += sorted([c for c in available if c not in CATEGORY_ORDER])
 
@@ -125,12 +133,14 @@ def load_cookbook():
         cat_path = os.path.join(RECIPES_DIR, cat)
         recipes = []
         for fname in sorted(os.listdir(cat_path)):
-            if not fname.endswith(".txt"):
+            if not fname.endswith(".doc"):
                 continue
             name = fname[:-4]
-            with open(os.path.join(cat_path, fname), encoding="utf-8") as f:
-                text = f.read()
-            recipes.append(parse_txt(name, text))
+            if name in SKIP_FILES:
+                continue
+            text = read_doc(os.path.join(cat_path, fname))
+            if text:
+                recipes.append(parse_doc(name, text))
         if recipes:
             cookbook[cat] = recipes
 

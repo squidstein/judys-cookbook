@@ -1,6 +1,5 @@
-[build]
-  command = "python3 build.py"
-  publish = "."
+# index.html is pre-built locally (build.py requires macOS/textutil).
+# Netlify just serves it as a static file — no build step needed.
 
-[build.environment]
-  PYTHON_VERSION = "3.11"
+[build]
+  publish = "."
