@@ -93,6 +93,36 @@ def guess_cuisine(name, category):
         return 'Ashkenazi'
     return ''   # blank — Judy fills in
 
+# ── Shared meta-line parser ────────────────────────────────────────────────
+def extract_meta_fields(line, r):
+    """
+    Parse a single metadata line, handling old docs that cram multiple
+    fields onto one line with tab separation, e.g.:
+      "From: Grandma's Kitchen          Number of servings: 6-8"
+    """
+    chunks = [c.strip() for c in re.split(r' {2,}|\t', line) if c.strip()]
+    for chunk in chunks:
+        cl = chunk.lower()
+        if cl.startswith("from"):
+            val = re.split(r"from[:\s]+", chunk, flags=re.I, maxsplit=1)[-1].strip()
+            if val and not r["from"]:
+                r["from"] = val
+        elif re.search(r"prep\.?\s*time", cl):
+            val = re.split(r"prep\.?\s*time[:\s]+", chunk, flags=re.I, maxsplit=1)[-1].strip()
+            if val and not r["prep_time"]:
+                r["prep_time"] = val
+        elif re.search(r"cook\.?\s*time", cl):
+            val = re.split(r"cook\.?\s*time[:\s]+", chunk, flags=re.I, maxsplit=1)[-1].strip()
+            if val and not r["cook_time"]:
+                r["cook_time"] = val
+        elif re.search(r"yield|serves|servings|number of", cl):
+            val = re.split(r"(yields?|serves?|servings?|number of\s+servings?)[:\s]*", chunk, flags=re.I, maxsplit=1)[-1].strip()
+            if val and not r["yields"]:
+                r["yields"] = val
+        else:
+            r["meta"].append(chunk)
+
+
 # ── Legacy .doc parser ─────────────────────────────────────────────────────
 def read_doc(path):
     result = subprocess.run(
@@ -115,17 +145,7 @@ def parse_legacy(name, text):
     meta_end = ing_idx if ing_idx is not None else (inst_idx if inst_idx is not None else len(lines))
     for l in lines[1:meta_end]:
         if l.lower() == name.lower() or len(l) > 150: continue
-        ll = l.lower()
-        if ll.startswith('from'):
-            r['from'] = re.split(r'from[:\s]+', l, flags=re.I, maxsplit=1)[-1].strip()
-        elif re.search(r'prep\.?\s*time', ll):
-            r['prep_time'] = re.split(r'prep\.?\s*time[:\s]+', l, flags=re.I, maxsplit=1)[-1].strip()
-        elif re.search(r'cook\.?\s*time', ll):
-            r['cook_time'] = re.split(r'cook\.?\s*time[:\s]+', l, flags=re.I, maxsplit=1)[-1].strip()
-        elif re.search(r'yield|serves|servings|number of', ll):
-            r['yields'] = re.split(r'(yield[s]?|serves?|servings?|number of\s+servings?)[:\s]*', l, flags=re.I, maxsplit=1)[-1].strip()
-        else:
-            r['meta'].append(l)
+        extract_meta_fields(l, r)
 
     if ing_idx is not None:
         end = inst_idx if inst_idx is not None else len(lines)
