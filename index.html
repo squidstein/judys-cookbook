@@ -235,7 +235,7 @@ function showRecipe(cat, idx) {
   const pillsDiv = document.getElementById('recipe-pills');
   pillsDiv.innerHTML = '';
   const pills = [
-    r.cuisine   && { cls: 'pill-cuisine', icon: r.cuisine.toLowerCase().includes('sephardi') ? '🌙' : '⭐', text: r.cuisine },
+    r.cuisine   && { cls: 'pill-cuisine', icon: ({'sephardi':'🌶️','ashkenazi':'🥯','israeli':'🇮🇱'}[r.cuisine.toLowerCase().split('/')[0].trim()] || '🍽️'), text: r.cuisine },
     r.from      && { cls: 'pill-from',    icon: '📖', text: 'From: ' + r.from },
     r.prep_time && { cls: 'pill-time',    icon: '⏱', text: 'Prep: ' + r.prep_time },
     r.cook_time && { cls: 'pill-time',    icon: '🍳', text: 'Cook: ' + r.cook_time },
