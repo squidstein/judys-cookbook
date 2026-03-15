@@ -107,8 +107,8 @@ def extract_meta_fields(line, r):
             val = re.split(r"from[:\s]+", chunk, flags=re.I, maxsplit=1)[-1].strip()
             if val and not r["from"]:
                 r["from"] = val
-        elif re.search(r"prep\.?\s*time", cl):
-            val = re.split(r"prep\.?\s*time[:\s]+", chunk, flags=re.I, maxsplit=1)[-1].strip()
+        elif re.search(r"prep(?:aration)?\.?\s*time", cl):
+            val = re.split(r"prep(?:aration)?\.?\s*time[:\s]+", chunk, flags=re.I, maxsplit=1)[-1].strip()
             if val and not r["prep_time"]:
                 r["prep_time"] = val
         elif re.search(r"cook\.?\s*time", cl):

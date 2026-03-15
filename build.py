@@ -2,31 +2,40 @@
 """
 Judy's Cookbook — Site Builder
 ================================
-Reads .doc recipe files from the recipes/ folder (symlinked to iCloud)
-and generates index.html.
-
-recipes/ is a symlink to:
-  ~/Library/Mobile Documents/com~apple~CloudDocs/Documents/
-  Personal - Reading and Interests/Mom's Cookbook/Cookbook
+Generates index.html from either the iCloud recipe files or the Notion database.
 
 Usage:
-    python3 build.py
+    python3 build.py                  # reads from iCloud files (default)
+    python3 build.py --source notion  # reads from Notion database
 
-Workflow:
-    1. Judy edits a recipe in Google Docs → it syncs to iCloud automatically
-    2. Run: python3 build.py
-    3. Run: git add index.html && git commit -m "update recipes" && git push
-    4. Netlify serves the updated site within ~30 seconds
+── Notion source ──────────────────────────────────────────────────────────────
+Requires a NOTION_TOKEN environment variable (an internal integration token).
 
-Note: build.py requires macOS (uses textutil to read .doc files).
-      index.html is committed to git so Netlify just serves it as a static file.
+Setup (one-time):
+  1. Go to https://www.notion.so/my-integrations → New integration → copy token
+  2. In Notion, open Family Cookbook → Share → Connect to → your integration
+  3. export NOTION_TOKEN=secret_xxxx   (add to ~/.zshrc to make permanent)
+
+Then run:
+    python3 build.py --source notion
+    git add index.html && git commit -m "update from Notion" && git push
+
+── File source (original workflow) ────────────────────────────────────────────
+  1. Judy edits recipes in iCloud
+  2. python3 build.py
+  3. git add index.html && git commit -m "update recipes" && git push
+
+Note: file source requires macOS (uses textutil for .doc files).
 """
 
-import os, json, re, subprocess
+import argparse, os, json, re, subprocess
 from docx import Document
 
-RECIPES_DIR = os.path.join(os.path.dirname(__file__), "recipes")
-OUTPUT_FILE = os.path.join(os.path.dirname(__file__), "index.html")
+NOTION_DB_ID = "324eef28a6748022b6c1e63b297bd8f5"
+
+RECIPES_DIR     = os.path.join(os.path.dirname(__file__), "recipes")
+RECIPES_NEW_DIR = os.path.join(os.path.dirname(__file__), "recipes_new")
+OUTPUT_FILE     = os.path.join(os.path.dirname(__file__), "index.html")
 
 CATEGORY_ICONS = {
     "Appetizers": "🫒",
@@ -35,9 +44,11 @@ CATEGORY_ICONS = {
     "Fish": "🐟",
     "Meat": "🥩",
     "Muffins & Breads": "🍞",
+    "Passover": "✡️",
     "Potatoes & Pasta": "🥔",
     "Salads & Vegetables": "🥗",
     "Soups & Stews": "🍲",
+    "Special": "⭐",
 }
 CATEGORY_DESCRIPTIONS = {
     "Appetizers": "Starters & small bites",
@@ -46,14 +57,17 @@ CATEGORY_DESCRIPTIONS = {
     "Fish": "Salmon, shrimp & seafood",
     "Meat": "Briskets, ribs & mains",
     "Muffins & Breads": "Loaves, challah & muffins",
+    "Passover": "Holiday recipes & traditions",
     "Potatoes & Pasta": "Kugel, pasta & sides",
     "Salads & Vegetables": "Fresh sides & salads",
     "Soups & Stews": "Warming bowls & broth",
+    "Special": "Judy's signature recipes",
 }
 
 CATEGORY_ORDER = [
     "Appetizers", "Chicken", "Fish", "Meat", "Soups & Stews",
-    "Salads & Vegetables", "Potatoes & Pasta", "Muffins & Breads", "Cookies & Cakes"
+    "Salads & Vegetables", "Potatoes & Pasta", "Muffins & Breads",
+    "Cookies & Cakes", "Passover", "Special",
 ]
 
 
@@ -169,8 +183,8 @@ def extract_meta_fields(line, r):
             val = re.split(r"from[:\s]+", chunk, flags=re.I, maxsplit=1)[-1].strip()
             if val and not r["from"]:
                 r["from"] = val
-        elif re.search(r"prep\.?\s*time", cl):
-            val = re.split(r"prep\.?\s*time[:\s]+", chunk, flags=re.I, maxsplit=1)[-1].strip()
+        elif re.search(r"prep(?:aration)?\.?\s*time", cl):
+            val = re.split(r"prep(?:aration)?\.?\s*time[:\s]+", chunk, flags=re.I, maxsplit=1)[-1].strip()
             if val and not r["prep_time"]:
                 r["prep_time"] = val
         elif re.search(r"cook\.?\s*time", cl):
@@ -247,19 +261,37 @@ def load_cookbook():
 
     for cat in ordered:
         cat_path = os.path.join(RECIPES_DIR, cat)
+        new_cat_path = os.path.join(RECIPES_NEW_DIR, cat)
+
+        # Index any staged .docx files in recipes_new for this category
+        staged = {}
+        if os.path.isdir(new_cat_path):
+            for f in os.listdir(new_cat_path):
+                if f.lower().endswith(".docx"):
+                    staged[os.path.splitext(f)[0]] = os.path.join(new_cat_path, f)
+
+        seen = set()
         recipes = []
         for fname in sorted(os.listdir(cat_path)):
             root, ext = os.path.splitext(fname)
             if ext.lower() not in RECIPE_EXTENSIONS:
                 continue
-            name = root
-            if name in SKIP_FILES:
+            if root in SKIP_FILES:
                 continue
+            if root in seen:
+                continue
+            seen.add(root)
+
             fpath = os.path.join(cat_path, fname)
             if ext.lower() == ".docx":
-                recipe = parse_docx_structured(name, fpath)
+                # iCloud already has a hand-edited .docx — use it
+                recipe = parse_docx_structured(root, fpath)
+            elif root in staged:
+                # Generated template in recipes_new — use that over legacy .doc
+                recipe = parse_docx_structured(root, staged[root])
             else:
-                recipe = read_and_parse_legacy(name, fpath)
+                recipe = read_and_parse_legacy(root, fpath)
+
             if recipe:
                 recipes.append(recipe)
         if recipes:
@@ -601,8 +633,111 @@ buildHome();
 </html>'''
 
 
-def build():
-    cookbook = load_cookbook()
+def load_from_notion():
+    """
+    Fetch all recipes from the Notion database and return the same
+    {category: [recipe, ...]} structure that load_cookbook() produces.
+
+    Requires: NOTION_TOKEN env var (internal integration token).
+    """
+    try:
+        import requests
+    except ImportError:
+        raise SystemExit("requests not installed — run: pip3 install requests")
+
+    token = os.environ.get("NOTION_TOKEN")
+    if not token:
+        raise SystemExit(
+            "NOTION_TOKEN not set.\n"
+            "  1. Create an integration at https://www.notion.so/my-integrations\n"
+            "  2. Share the Family Cookbook DB with that integration\n"
+            "  3. export NOTION_TOKEN=secret_xxxx"
+        )
+
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Notion-Version": "2022-06-28",
+        "Content-Type": "application/json",
+    }
+
+    # Paginate through all pages in the database
+    pages, cursor = [], None
+    while True:
+        payload = {"page_size": 100}
+        if cursor:
+            payload["start_cursor"] = cursor
+        resp = requests.post(
+            f"https://api.notion.com/v1/databases/{NOTION_DB_ID}/query",
+            headers=headers, json=payload
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        pages.extend(data["results"])
+        if not data.get("has_more"):
+            break
+        cursor = data["next_cursor"]
+
+    def get_text(props, name):
+        p = props.get(name, {})
+        t = p.get("type")
+        if t == "title":
+            return "".join(r["plain_text"] for r in p.get("title", []))
+        if t == "rich_text":
+            return "".join(r["plain_text"] for r in p.get("rich_text", []))
+        return ""
+
+    def get_select(props, name):
+        p = props.get(name, {})
+        if p.get("type") == "select" and p.get("select"):
+            return p["select"]["name"]
+        return None
+
+    cookbook = {}
+    for page in pages:
+        props = page["properties"]
+        name = get_text(props, "Name")
+        if not name:
+            continue
+
+        category = get_select(props, "Folder") or "Special"
+        ingredients_raw = get_text(props, "Ingredients")
+        steps_raw       = get_text(props, "Preparation Steps")
+        notes_raw       = get_text(props, "Chef's Notes")
+
+        recipe = {
+            "title":       name,
+            "cuisine":     get_select(props, "Cuisine"),
+            "from":        get_text(props, "From") or None,
+            "prep_time":   get_text(props, "Preparation Time") or None,
+            "cook_time":   get_text(props, "Cook Time") or None,
+            "yields":      get_text(props, "Yields") or None,
+            "kashrut":     get_select(props, "Kashrut"),
+            "description": get_text(props, "Description") or None,
+            "ingredients": [l for l in ingredients_raw.splitlines() if l.strip()],
+            "steps":       [l for l in steps_raw.splitlines() if l.strip()],
+            "notes":       [l for l in notes_raw.splitlines() if l.strip()],
+            "meta":        [],
+        }
+        cookbook.setdefault(category, []).append(recipe)
+
+    # Sort each category alphabetically by title
+    for cat in cookbook:
+        cookbook[cat].sort(key=lambda r: r["title"].lower())
+
+    # Order categories
+    available = list(cookbook.keys())
+    ordered = [c for c in CATEGORY_ORDER if c in available]
+    ordered += sorted([c for c in available if c not in CATEGORY_ORDER])
+    return {c: cookbook[c] for c in ordered}
+
+
+def build(source="files"):
+    if source == "notion":
+        print("Fetching recipes from Notion...")
+        cookbook = load_from_notion()
+    else:
+        cookbook = load_cookbook()
+
     total = sum(len(v) for v in cookbook.values())
     print(f"Loaded {total} recipes across {len(cookbook)} categories")
 
@@ -618,4 +753,12 @@ def build():
 
 
 if __name__ == "__main__":
-    build()
+    parser = argparse.ArgumentParser(description="Judy's Cookbook site builder")
+    parser.add_argument(
+        "--source",
+        choices=["files", "notion"],
+        default="files",
+        help="Data source: 'files' (iCloud, default) or 'notion'",
+    )
+    args = parser.parse_args()
+    build(source=args.source)
