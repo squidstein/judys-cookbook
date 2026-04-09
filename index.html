@@ -282,7 +282,7 @@ function showRecipe(cat, idx) {
   let stepsHtml = '';
   if (stepsArr.length) {
     stepsHtml = `<div class="steps-section"><div class="recipe-section-heading">Preparation Steps</div><ol>` +
-      stepsArr.map(s => `<li><span>${esc(s)}</span></li>`).join('') + `</ol></div>`;
+      stepsArr.map(s => `<li><span>${esc(s.replace(/^\d+\.\s*/, ''))}</span></li>`).join('') + `</ol></div>`;
   }
   if (!ingHtml && !stepsHtml) {
     body.style.gridTemplateColumns = '1fr';
