@@ -694,6 +694,8 @@ def load_from_notion():
 
     cookbook = {}
     for page in pages:
+        if page.get("archived") or page.get("in_trash"):
+            continue
         props = page["properties"]
         name = get_text(props, "Name")
         if not name:
