@@ -29,7 +29,6 @@ Note: file source requires macOS (uses textutil for .doc files).
 """
 
 import argparse, os, json, re, subprocess
-from docx import Document
 
 NOTION_DB_ID = "324eef28a6748022b6c1e63b297bd8f5"
 
@@ -113,6 +112,7 @@ def parse_docx_structured(name, path):
                         Preparation Steps / Chef's Notes
       normal (after)  → section content
     """
+    from docx import Document
     r = empty_recipe(name)
     doc = Document(path)
     current_section = None
