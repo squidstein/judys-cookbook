@@ -30,6 +30,16 @@ Note: file source requires macOS (uses textutil for .doc files).
 
 import argparse, os, json, re, subprocess
 
+_ENV_FILE = os.path.join(os.path.dirname(__file__), ".env")
+if os.path.exists(_ENV_FILE):
+    with open(_ENV_FILE) as _f:
+        for _line in _f:
+            _line = _line.strip()
+            if not _line or _line.startswith("#") or "=" not in _line:
+                continue
+            _k, _v = _line.split("=", 1)
+            os.environ.setdefault(_k.strip(), _v.strip().strip('"').strip("'"))
+
 NOTION_DB_ID = "324eef28a6748022b6c1e63b297bd8f5"
 
 RECIPES_DIR     = os.path.join(os.path.dirname(__file__), "recipes")
@@ -53,7 +63,7 @@ CATEGORY_DESCRIPTIONS = {
     "Appetizers": "Starters & small bites",
     "Chicken": "Roasts, curries & more",
     "Cookies & Cakes": "Sweets & baked treats",
-    "Fish": "Salmon, shrimp & seafood",
+    "Fish": "Salmon, tuna & seafood",
     "Meat": "Briskets, ribs & mains",
     "Muffins & Breads": "Loaves, challah & muffins",
     "Passover": "Holiday recipes & traditions",
