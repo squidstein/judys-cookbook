@@ -64,7 +64,7 @@ CATEGORY_DESCRIPTIONS = {
     "Chicken": "Roasts, curries & more",
     "Cookies & Cakes": "Sweets & baked treats",
     "Fish": "Salmon, tuna & seafood",
-    "Meat": "Briskets, ribs & mains",
+    "Meat": "Briskets, chicken & mains",
     "Muffins & Breads": "Loaves, challah & muffins",
     "Passover": "Holiday recipes & traditions",
     "Potatoes & Pasta": "Kugel, pasta & sides",
