@@ -404,6 +404,27 @@ main { max-width: 1100px; margin: 0 auto; padding: 48px 24px 80px; }
 .pill-time    { background: var(--cream-dark); color: var(--text-light); }
 .pill-yields  { background: var(--cream-dark); color: var(--text-light); }
 .pill-kashrut { background: #2C5F2E; color: #fff; }
+.pill-cuisine { padding-left: 4px; }
+.pill-cuisine.c-sephardi  { background: #8B4513; }
+.pill-cuisine.c-ashkenazi { background: #1F4225; }
+.pill-cuisine.c-israeli   { background: #1E3A5F; }
+.pill-cuisine.c-yemeni    { background: #7A2E3A; }
+.pill-cuisine.c-other     { background: #6B5E4E; }
+.pill-ico { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 50%; background: #FBF6EC; flex: none; font-size: 11px; line-height: 1; }
+.pill-ico svg { width: 16px; height: 16px; display: block; }
+.kbadge { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; border: 2px solid; background: #fff; flex: none; font-size: 13px; font-weight: 800; line-height: 1; }
+.k-meat   { border-color: #A23B2A; }
+.k-dairy  { border-color: #2F6DB5; }
+.k-fish   { border-color: #1E7F86; }
+.k-pareve { border-color: #C4973F; color: #7A5A1A; font-family: Georgia, 'Times New Roman', serif; font-size: 14px; }
+.k-vegan  { border-color: #2E8B3E; background: #2E8B3E; color: #fff; font-family: Georgia, 'Times New Roman', serif; font-size: 14px; }
+.recipe-pills { align-items: center; }
+.legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px 22px; margin: 0 auto 18px; color: rgba(255,255,255,0.85); font-size: 0.82rem; letter-spacing: 0.02em; }
+.legend-item { display: inline-flex; align-items: center; gap: 7px; }
+.card-tags { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 8px 0 4px; }
+.card-tags .pill { font-size: 0.72rem; padding: 2px 10px 2px 3px; }
+.card-tags .kbadge { width: 22px; height: 22px; font-size: 11px; }
+.card-tags .k-pareve, .card-tags .k-vegan { font-size: 12px; }
 
 /* ── Description ── */
 .recipe-description { font-family: 'Playfair Display', serif; font-style: italic; font-size: 1rem; color: var(--text-light); line-height: 1.7; margin-bottom: 32px; border-left: 3px solid var(--gold); padding-left: 14px; }
@@ -486,11 +507,48 @@ footer { text-align: center; padding: 32px 24px; font-size: 0.8rem; color: rgba(
   </div>
 </main>
 <footer class="tile-bg">
+  <div class="legend" aria-label="Kashrut symbols">
+    <span class="legend-item"><span class="kbadge k-meat">🥩</span>Meat</span>
+    <span class="legend-item"><span class="kbadge k-dairy">🥛</span>Dairy</span>
+    <span class="legend-item"><span class="kbadge k-fish">🐟</span>Fish</span>
+    <span class="legend-item"><span class="kbadge k-pareve">U</span>Pareve</span>
+    <span class="legend-item"><span class="kbadge k-vegan">V</span>Vegan option</span>
+  </div>
   <p>Made with love for Judy Goldberg-Hazan &nbsp;·&nbsp; A Family Heirloom</p>
 </footer>
 <script>
 const COOKBOOK = __COOKBOOK_DATA__;
 const ICONS = __ICONS_DATA__;
+const CUISINE_ICONS = {
+  sephardi: '<svg viewBox="0 0 24 24" aria-hidden="true"><g fill="#8B4513"><rect x="7.3" y="4" width="2.6" height="9" rx="1.3"/><rect x="10.7" y="2.2" width="2.6" height="10" rx="1.3"/><rect x="14.1" y="4" width="2.6" height="9" rx="1.3"/><path d="M6.6 10.5H17.4V16A5.4 5.4 0 0 1 6.6 16Z"/><path d="M7 15.6C5 14.8 3.6 13.2 3.1 11.2C2.9 10.2 4 9.7 4.7 10.5L7 13Z"/><path d="M17 15.6C19 14.8 20.4 13.2 20.9 11.2C21.1 10.2 20 9.7 19.3 10.5L17 13Z"/></g><ellipse cx="12" cy="15.6" rx="2.7" ry="1.6" fill="#fff"/><circle cx="12" cy="15.6" r="1.05" fill="#1E5AA8"/></svg>',
+  ashkenazi: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.8 16.2C6.6 12 7.2 8.6 8.6 7.4C9.8 6.4 10.9 7.6 12 7.6C13.1 7.6 14.2 6.4 15.4 7.4C16.8 8.6 17.4 12 17.2 16.2Z" fill="#111"/><rect x="6.8" y="13.4" width="10.4" height="1.8" fill="#444"/><ellipse cx="12" cy="16.8" rx="10.2" ry="2.3" fill="#111"/></svg>',
+  israeli: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="1.5" y="5" width="21" height="14" rx="1" fill="#fff" stroke="#c9ccd6" stroke-width=".6"/><rect x="1.5" y="6.4" width="21" height="2" fill="#0038B8"/><rect x="1.5" y="15.6" width="21" height="2" fill="#0038B8"/><g fill="none" stroke="#0038B8" stroke-width=".8"><path d="M12 9.2L14.5 13.5H9.5Z"/><path d="M12 14.8L14.5 10.5H9.5Z"/></g></svg>',
+  yemeni: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.12 5.39A8 8 0 0 0 19.88 5.39" fill="none" stroke="#9A7420" stroke-width=".7"/><g stroke="#B8862B" stroke-width=".8"><path d="M6.86 10.13V14"/><path d="M12 12V16.2"/><path d="M17.14 10.13V14"/></g><g fill="#C8962E"><circle cx="4.12" cy="5.39" r="1.1"/><circle cx="6.86" cy="10.13" r="1.1"/><circle cx="12" cy="12" r="1.2"/><circle cx="17.14" cy="10.13" r="1.1"/><circle cx="19.88" cy="5.39" r="1.1"/><circle cx="6.86" cy="15.1" r="1.4"/><circle cx="17.14" cy="15.1" r="1.4"/><path d="M12 15.8L14.2 19.2L12 22.6L9.8 19.2Z"/></g><g fill="#B8323A"><circle cx="5.07" cy="8" r="1"/><circle cx="9.26" cy="11.52" r="1"/><circle cx="14.74" cy="11.52" r="1"/><circle cx="18.93" cy="8" r="1"/><circle cx="12" cy="19.2" r=".9"/></g></svg>',
+  other: '<svg viewBox="0 0 24 24" aria-hidden="true"><g fill="#5A4A3A"><path d="M6 3h1v6h1V3h1v6h1V3h1v7a2.5 2.5 0 0 1-2 2.45V21a1 1 0 0 1-2 0v-8.55A2.5 2.5 0 0 1 6 10Z"/><path d="M18.2 3C16 3.8 14.6 7 14.6 11.2h2.4V21a1 1 0 0 0 2 0V3.2Z"/></g></svg>',
+};
+function cuisineKey(c) { return (c || '').toLowerCase().split('/')[0].trim(); }
+function cuisinePillHTML(c) {
+  if (!c) return '';
+  const k = cuisineKey(c);
+  const cls = CUISINE_ICONS[k] ? k : 'other';
+  return `<span class="pill pill-cuisine c-${cls}"><span class="pill-ico">${CUISINE_ICONS[cls]}</span>${esc(c)}</span>`;
+}
+const KASHRUT_BADGES = {
+  meat:   { cls: 'k-meat',   sym: '🥩', title: 'Meat' },
+  dairy:  { cls: 'k-dairy',  sym: '🥛', title: 'Dairy' },
+  milk:   { cls: 'k-dairy',  sym: '🥛', title: 'Dairy' },
+  fish:   { cls: 'k-fish',   sym: '🐟', title: 'Fish' },
+  pareve: { cls: 'k-pareve', sym: 'U',  title: 'Pareve' },
+  vegan:  { cls: 'k-pareve', sym: 'U',  title: 'Pareve' },
+};
+function dietBadgesHTML(r) {
+  const k = (r.kashrut || '').toLowerCase().trim();
+  let h = '';
+  const b = KASHRUT_BADGES[k];
+  if (b) h += `<span class="kbadge ${b.cls}" title="${b.title}" aria-label="${b.title}">${b.sym}</span>`;
+  if (r.vegan_option || k === 'vegan') h += `<span class="kbadge k-vegan" title="Vegan option" aria-label="Vegan option">V</span>`;
+  return h;
+}
 const DESCS = __DESCS_DATA__;
 
 function showHome() {
@@ -512,7 +570,8 @@ function showCategory(cat) {
   recipes.forEach((r, i) => {
     const card = document.createElement('div');
     card.className = 'recipe-card';
-    const cuisineBadge = r.cuisine ? `<span style="font-size:0.7rem;font-weight:700;color:var(--terracotta);text-transform:uppercase;letter-spacing:0.05em">${esc(r.cuisine)}</span>` : '';
+    const tags = cuisinePillHTML(r.cuisine) + dietBadgesHTML(r);
+    const cuisineBadge = tags ? `<div class="card-tags">${tags}</div>` : '';
     const fromText = r.from ? `<div class="recipe-meta-preview">From: ${esc(r.from)}</div>` : (r.meta && r.meta.length ? `<div class="recipe-meta-preview">${esc(r.meta[0])}</div>` : '');
     card.innerHTML = `<h3>${esc(r.title)}</h3>${cuisineBadge}${fromText}`;
     card.onclick = () => showRecipe(cat, i);
@@ -546,21 +605,24 @@ function showRecipe(cat, idx) {
   // Pills
   const pillsDiv = document.getElementById('recipe-pills');
   pillsDiv.innerHTML = '';
+  pillsDiv.className = 'recipe-pills';
+  const cuisineHTML = cuisinePillHTML(r.cuisine);
+  const badgesHTML = dietBadgesHTML(r);
   const pills = [
-    r.cuisine   && { cls: 'pill-cuisine', icon: ({'sephardi':'🌶️','ashkenazi':'🥯','israeli':'🇮🇱'}[r.cuisine.toLowerCase().split('/')[0].trim()] || '🍽️'), text: r.cuisine },
     r.from      && { cls: 'pill-from',    icon: '📖', text: 'From: ' + r.from },
     r.prep_time && { cls: 'pill-time',    icon: '⏱', text: 'Prep: ' + r.prep_time },
     r.cook_time && { cls: 'pill-time',    icon: '🍳', text: 'Cook: ' + r.cook_time },
     r.yields    && { cls: 'pill-yields',  icon: '🍽', text: r.yields },
-    r.kashrut   && { cls: 'pill-kashrut', icon: '✡', text: r.kashrut },
   ].filter(Boolean);
-  if (pills.length) {
+  if (pills.length || cuisineHTML || badgesHTML) {
+    pillsDiv.insertAdjacentHTML('beforeend', cuisineHTML);
     pills.forEach(p => {
       const span = document.createElement('span');
       span.className = `pill ${p.cls}`;
       span.innerHTML = `${p.icon} ${esc(p.text)}`;
       pillsDiv.appendChild(span);
     });
+    pillsDiv.insertAdjacentHTML('beforeend', badgesHTML);
   } else if (r.meta && r.meta.length) {
     // Legacy fallback: show old-style meta tags
     pillsDiv.className = 'legacy-meta';
@@ -724,6 +786,7 @@ def load_from_notion():
             "cook_time":   get_text(props, "Cook Time") or None,
             "yields":      get_text(props, "Yields") or None,
             "kashrut":     get_select(props, "Kashrut"),
+            "vegan_option": bool(props.get("Vegan Option?", {}).get("checkbox")),
             "description": get_text(props, "Description") or None,
             "ingredients": [l for l in ingredients_raw.splitlines() if l.strip()],
             "steps":       [l for l in steps_raw.splitlines() if l.strip()],
