@@ -1,8 +1,10 @@
 # Netlify builds the site from Notion on every push and every build-hook call.
-# Needs NOTION_TOKEN set in Netlify's environment variables.
+# Needs NOTION_TOKEN (and RECIPE_PASSWORD, BUILD_HOOK_URL for the edit form)
+# in Netlify's environment variables.
+# Only the built page is published — the repo's scripts and docs stay private.
 [build]
-  command = "python3 build.py --source notion"
-  publish = "."
+  command = "python3 build.py --source notion && mkdir -p public && cp index.html public/"
+  publish = "public"
 
 [functions]
   directory = "netlify/functions"

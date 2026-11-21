@@ -3,3 +3,4 @@ __pycache__/
 *.pyc
 recipes_new/
 .env
+public/
