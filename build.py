@@ -465,6 +465,10 @@ main { max-width: 1100px; margin: 0 auto; padding: 48px 24px 80px; }
 .toggle input:focus-visible + .switch { box-shadow: 0 0 0 3px rgba(196,151,63,0.35); }
 .grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
 @media (max-width: 520px) { .grid3 { grid-template-columns: 1fr; } .form-card { padding: 22px 18px; } }
+.from-row { display: flex; align-items: center; gap: 8px; }
+.from-row input { flex: 1; min-width: 0; }
+.from-suffix { font-size: 16px; color: var(--text); white-space: nowrap; }
+.link-btn { background: none; border: none; padding: 8px 0 0; color: var(--indigo-light); font-size: 0.82rem; text-decoration: underline; cursor: pointer; font-family: 'Lato', sans-serif; }
 .form-error { color: #A32D2D; font-size: 0.92rem; min-height: 1.2em; margin-bottom: 10px; }
 .save-btn { width: 100%; background: var(--terracotta); color: #fff; border: none; border-radius: 10px; padding: 16px; font-size: 1.05rem; font-weight: 700; font-family: 'Lato', sans-serif; cursor: pointer; }
 .save-btn:hover { background: var(--terracotta-light); }
@@ -601,7 +605,10 @@ footer { text-align: center; padding: 32px 24px; font-size: 0.8rem; color: rgba(
         <div><label class="fl" for="f-cook">Cook time</label><input type="text" id="f-cook" placeholder="45 min"></div>
         <div><label class="fl" for="f-yields">Serves</label><input type="text" id="f-yields" placeholder="8"></div>
       </div>
-      <div class="ff"><label class="fl" for="f-from">From<span class="hint">whose recipe is it?</span></label><input type="text" id="f-from"></div>
+      <div class="ff"><label class="fl" for="f-from">From<span class="hint">whose recipe is it?</span></label>
+        <div class="from-row"><input type="text" id="f-from" placeholder="Grandma"><span class="from-suffix" id="from-suffix">'s Kitchen</span></div>
+        <button type="button" class="link-btn" id="from-toggle" onclick="toggleFromSuffix()"></button>
+      </div>
       <div class="ff"><label class="fl" for="f-notes">Notes<span class="hint">optional</span></label><textarea id="f-notes" style="min-height:70px"></textarea></div>
       <div class="form-error" id="form-error" role="alert"></div>
       <button class="save-btn" id="save-btn" onclick="saveRecipe()">Save recipe</button>
@@ -936,10 +943,10 @@ const NL = String.fromCharCode(10);
 let editCtx = null;
 const OPTION_ORDER = {
   Cuisine: ['Sephardi', 'Ashkenazi', 'Israeli', 'Yemeni', 'Other'],
-  Kashrut: ['Meat', 'Dairy', 'Fish', 'Pareve'],
+  Kashrut: ['Meat', 'Dairy', 'Fish', 'Pareve', 'Vegan'],
   Tradition: ['Friday Night', 'Shabbat Lunch', 'Holidays', 'Passover'],
 };
-const OPTION_HIDE = ['Uh Oh', 'Vegan'];
+const OPTION_HIDE = ['Uh Oh'];
 function optList(name, fallback, keep) {
   let o = (OPTIONS[name] || []).filter(v => !(name === 'Kashrut' && OPTION_HIDE.includes(v)) && v !== 'Uh Oh');
   if (!o.length) o = fallback.slice();
@@ -972,7 +979,7 @@ function renderChips(id, values, selected, opts) {
 }
 const cuisineChip = v => `<span class="pill-ico">${CUISINE_ICONS[cuisineKey(v)] || CUISINE_ICONS.other}</span>${esc(v)}`;
 const tradChip = v => `<span class="pill-ico">${traditionIcon(v)}</span>${esc(v)}`;
-const kashrutChip = v => { const b = KASHRUT_BADGES[v.toLowerCase()]; return `<span class="kbadge ${b ? b.cls : 'k-pareve'}">${b ? b.sym : esc(v.charAt(0))}</span>${esc(v)}`; };
+const kashrutChip = v => { const b = v.toLowerCase() === 'vegan' ? { cls: 'k-vegan', sym: 'V' } : KASHRUT_BADGES[v.toLowerCase()]; return `<span class="kbadge ${b ? b.cls : 'k-pareve'}">${b ? b.sym : esc(v.charAt(0))}</span>${esc(v)}`; };
 function showEditor(cat, i) {
   const r = (cat !== undefined && cat !== null) ? COOKBOOK[cat][i] : null;
   editCtx = r ? { cat, i, id: r.id } : null;
@@ -990,7 +997,9 @@ function showEditor(cat, i) {
   set('f-prep', r && r.prep_time);
   set('f-cook', r && r.cook_time);
   set('f-yields', r && r.yields);
-  set('f-from', r && r.from);
+  const fromMatch = ((r && r.from) || '').match(/^(.*?)['’]s Kitchen$/i);
+  if (r && r.from && !fromMatch) { set('f-from', r.from); setFromSuffix(false); }
+  else { set('f-from', fromMatch ? fromMatch[1] : ''); setFromSuffix(true); }
   document.getElementById('f-vegan').checked = !!(r && r.vegan_option);
   const folders = Object.keys(COOKBOOK).concat((OPTIONS.Folder || []).filter(f => !(f in COOKBOOK)));
   renderChips('f-folder', folders, r ? cat : '', { required: true });
@@ -1000,6 +1009,21 @@ function showEditor(cat, i) {
   document.getElementById('form-error').textContent = '';
   document.getElementById('edit-back').onclick = () => r ? showRecipe(cat, i) : showHome(true);
   window.scrollTo(0, 0);
+}
+let fromSuffix = true;
+function setFromSuffix(on) {
+  fromSuffix = on;
+  document.getElementById('from-suffix').style.display = on ? '' : 'none';
+  document.getElementById('f-from').placeholder = on ? 'Grandma' : 'Moosewood Cookbook';
+  document.getElementById('from-toggle').textContent = on
+    ? 'Not from a family kitchen? Enter a cookbook or other source instead'
+    : "Use the “…'s Kitchen” format instead";
+}
+function toggleFromSuffix() { setFromSuffix(!fromSuffix); document.getElementById('f-from').focus(); }
+function fromValue() {
+  const v = document.getElementById('f-from').value.trim();
+  if (!v || !fromSuffix) return v;
+  return v.replace(/['’]s kitchen$/i, '').trim() + "'s Kitchen";
 }
 function formError(msg, focusId) {
   document.getElementById('form-error').textContent = msg;
@@ -1012,7 +1036,7 @@ async function saveRecipe() {
     name: g('f-name'), folder: chip('f-folder'), cuisine: chip('f-cuisine'), tradition: chip('f-tradition'),
     kashrut: chip('f-kashrut'), vegan_option: document.getElementById('f-vegan').checked,
     description: g('f-description'), ingredients: g('f-ingredients'), steps: g('f-steps'), notes: g('f-notes'),
-    from: g('f-from'), prep_time: g('f-prep'), cook_time: g('f-cook'), yields: g('f-yields'),
+    from: fromValue(), prep_time: g('f-prep'), cook_time: g('f-cook'), yields: g('f-yields'),
   };
   const pw = getPw();
   if (!fields.name) return formError('Give the recipe a name.', 'f-name');
