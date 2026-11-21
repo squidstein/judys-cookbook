@@ -71,7 +71,6 @@ CATEGORY_DESCRIPTIONS = {
     "Potatoes & Pasta": "Kugel, pasta & sides",
     "Salads & Vegetables": "Fresh sides & salads",
     "Soups & Stews": "Warming bowls & broth",
-    "Special": "Judy's signature recipes",
 }
 
 CATEGORY_ORDER = [
