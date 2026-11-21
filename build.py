@@ -411,6 +411,8 @@ main { max-width: 1100px; margin: 0 auto; padding: 48px 24px 80px; }
 .pill-cuisine.c-yemeni    { background: #F2E0E3; color: #7A2E3A; }
 .pill-cuisine.c-other     { background: #ECE7DF; color: #5A4A3A; }
 .pill-cuisine .pill-ico   { background: #fff; }
+.pill-trad { background: #F4ECD8; color: #6E5214; padding-left: 4px; }
+.pill-trad .pill-ico { background: #fff; }
 .recipe-card { border-left-width: 5px; }
 .pill-ico { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 50%; background: #FBF6EC; flex: none; font-size: 11px; line-height: 1; }
 .pill-ico svg { width: 16px; height: 16px; display: block; }
@@ -547,6 +549,18 @@ const CATEGORY_COLORS = {
   'Passover': '#5B4B8A', 'Special': '#4A5A6A',
 };
 function catColor(cat) { return CATEGORY_COLORS[cat] || '#C4973F'; }
+const TRADITION_ICONS = {
+  candles: '<svg viewBox="0 0 24 24" aria-hidden="true"><g fill="#C4973F"><rect x="6" y="10" width="3.5" height="11" rx=".6"/><rect x="14.5" y="10" width="3.5" height="11" rx=".6"/></g><g fill="#E0702A"><path d="M7.75 3.5C9 5.5 9.3 6.8 7.75 8.6C6.2 6.8 6.5 5.5 7.75 3.5Z"/><path d="M16.25 3.5C17.5 5.5 17.8 6.8 16.25 8.6C14.7 6.8 15 5.5 16.25 3.5Z"/></g></svg>',
+  matzah: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="1.5" fill="#E8C98A" stroke="#B8862B" stroke-width=".8"/><g stroke="#C9A35B" stroke-width=".7"><path d="M3.5 8.5H20.5"/><path d="M3.5 13.5H20.5"/><path d="M3.5 18H20.5"/></g><g fill="#8B5E1E"><circle cx="7" cy="6" r=".7"/><circle cx="12" cy="6" r=".7"/><circle cx="17" cy="6" r=".7"/><circle cx="9.5" cy="11" r=".7"/><circle cx="14.5" cy="11" r=".7"/><circle cx="7" cy="15.8" r=".7"/><circle cx="12" cy="15.8" r=".7"/><circle cx="17" cy="15.8" r=".7"/></g></svg>',
+  sun: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.6" fill="#E3A21A"/><g stroke="#E3A21A" stroke-width="1.8" stroke-linecap="round"><path d="M12 2.5V5"/><path d="M12 19V21.5"/><path d="M2.5 12H5"/><path d="M19 12H21.5"/><path d="M5.3 5.3L7 7"/><path d="M17 17L18.7 18.7"/><path d="M5.3 18.7L7 17"/><path d="M17 7L18.7 5.3"/></g></svg>',
+  star: '<svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="#1E3A5F" stroke-width="1.6" stroke-linejoin="round"><path d="M12 3L19.8 16.5H4.2Z"/><path d="M12 21L4.2 7.5H19.8Z"/></g></svg>',
+};
+function traditionPillHTML(t) {
+  if (!t) return '';
+  const k = String(t).toLowerCase();
+  const icon = /friday|erev|candle/.test(k) ? 'candles' : /passover|pesach/.test(k) ? 'matzah' : /shabbat|seudah|lunch/.test(k) ? 'sun' : 'star';
+  return `<span class="pill pill-trad" title="Traditionally made for ${esc(t)}"><span class="pill-ico">${TRADITION_ICONS[icon]}</span>${esc(t)}</span>`;
+}
 const CUISINE_ICONS = {
   sephardi: '<svg viewBox="0 0 24 24" aria-hidden="true"><g fill="#8B4513"><rect x="7.3" y="4" width="2.6" height="9" rx="1.3"/><rect x="10.7" y="2.2" width="2.6" height="10" rx="1.3"/><rect x="14.1" y="4" width="2.6" height="9" rx="1.3"/><path d="M6.6 10.5H17.4V16A5.4 5.4 0 0 1 6.6 16Z"/><path d="M7 15.6C5 14.8 3.6 13.2 3.1 11.2C2.9 10.2 4 9.7 4.7 10.5L7 13Z"/><path d="M17 15.6C19 14.8 20.4 13.2 20.9 11.2C21.1 10.2 20 9.7 19.3 10.5L17 13Z"/></g><ellipse cx="12" cy="15.6" rx="2.7" ry="1.6" fill="#fff"/><circle cx="12" cy="15.6" r="1.05" fill="#1E5AA8"/></svg>',
   ashkenazi: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.8 16.2C6.6 12 7.2 8.6 8.6 7.4C9.8 6.4 10.9 7.6 12 7.6C13.1 7.6 14.2 6.4 15.4 7.4C16.8 8.6 17.4 12 17.2 16.2Z" fill="#111"/><rect x="6.8" y="13.4" width="10.4" height="1.8" fill="#444"/><ellipse cx="12" cy="16.8" rx="10.2" ry="2.3" fill="#111"/></svg>',
@@ -600,7 +614,7 @@ function showCategory(cat) {
     const card = document.createElement('div');
     card.className = 'recipe-card';
     card.style.borderLeftColor = catColor(cat);
-    const tags = cuisinePillHTML(r.cuisine) + dietBadgesHTML(r);
+    const tags = cuisinePillHTML(r.cuisine) + traditionPillHTML(r.tradition) + dietBadgesHTML(r);
     const cuisineBadge = tags ? `<div class="card-tags">${tags}</div>` : '';
     const fromText = r.from ? `<div class="recipe-meta-preview">From: ${esc(r.from)}</div>` : (r.meta && r.meta.length ? `<div class="recipe-meta-preview">${esc(r.meta[0])}</div>` : '');
     card.innerHTML = `<h3>${esc(r.title)}</h3>${cuisineBadge}${fromText}`;
@@ -637,7 +651,7 @@ function showRecipe(cat, idx) {
   const pillsDiv = document.getElementById('recipe-pills');
   pillsDiv.innerHTML = '';
   pillsDiv.className = 'recipe-pills';
-  const cuisineHTML = cuisinePillHTML(r.cuisine);
+  const cuisineHTML = cuisinePillHTML(r.cuisine) + traditionPillHTML(r.tradition);
   const badgesHTML = dietBadgesHTML(r);
   const pills = [
     r.from      && { cls: 'pill-from',    icon: '📖', text: 'From: ' + r.from },
@@ -738,7 +752,7 @@ function norm(s) { return String(s || '').toLowerCase().normalize('NFD').replace
 const SEARCH_INDEX = [];
 Object.keys(COOKBOOK).forEach(cat => COOKBOOK[cat].forEach((r, i) => {
   const ings = r.ingredients || [];
-  SEARCH_INDEX.push({ cat, i, r, title: norm(r.title), ings: ings.map(norm), ingsRaw: ings });
+  SEARCH_INDEX.push({ cat, i, r, title: norm(r.title), trad: norm(r.tradition), ings: ings.map(norm), ingsRaw: ings });
 }));
 function highlight(text, terms) {
   // Highlight terms when normalizing didn't change the string length (keeps indexes aligned)
@@ -771,9 +785,11 @@ function runSearch(q) {
     const ok = terms.every(t => {
       const inTitle = e.title.includes(t);
       const inIng = e.ings.some(l => l.includes(t));
+      const inTrad = !!e.trad && e.trad.includes(t);
+      if (inTrad) score += 5;
       if (inTitle) score += e.title.startsWith(t) ? 20 : 10;
       if (inIng) score += 1;
-      return inTitle || inIng;
+      return inTitle || inIng || inTrad;
     });
     if (!ok) return;
     const lines = [];
@@ -787,7 +803,7 @@ function runSearch(q) {
     const r = e.r;
     const card = document.createElement('div');
     card.className = 'recipe-card';
-    const tags = cuisinePillHTML(r.cuisine) + dietBadgesHTML(r);
+    const tags = cuisinePillHTML(r.cuisine) + traditionPillHTML(r.tradition) + dietBadgesHTML(r);
     const note = lines.length ? `<div class="match-note">Uses: ${lines.map(l => highlight(l, terms)).join(' · ')}</div>` : '';
     card.style.borderLeftColor = catColor(e.cat);
     card.innerHTML = `<div class="card-cat" style="color:${catColor(e.cat)}">${esc(e.cat)}</div><h3>${highlight(r.title, terms)}</h3>${tags ? `<div class="card-tags">${tags}</div>` : ''}${note}`;
@@ -899,6 +915,7 @@ def load_from_notion():
             "cook_time":   get_text(props, "Cook Time") or None,
             "yields":      get_text(props, "Yields") or None,
             "kashrut":     get_select(props, "Kashrut"),
+            "tradition":   get_select(props, "Tradition"),
             "vegan_option": bool(props.get("Vegan Option?", {}).get("checkbox")),
             "description": get_text(props, "Description") or None,
             "ingredients": [l for l in ingredients_raw.splitlines() if l.strip()],
