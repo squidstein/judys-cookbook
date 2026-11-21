@@ -1,5 +1,8 @@
-# index.html is pre-built locally (build.py requires macOS/textutil).
-# Netlify just serves it as a static file — no build step needed.
-
+# Netlify builds the site from Notion on every push and every build-hook call.
+# Needs NOTION_TOKEN set in Netlify's environment variables.
 [build]
+  command = "python3 build.py --source notion"
   publish = "."
+
+[functions]
+  directory = "netlify/functions"

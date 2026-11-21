@@ -41,6 +41,7 @@ if os.path.exists(_ENV_FILE):
             os.environ.setdefault(_k.strip(), _v.strip().strip('"').strip("'"))
 
 NOTION_DB_ID = "324eef28a6748022b6c1e63b297bd8f5"
+NOTION_OPTIONS = {}  # select options from the Notion schema, filled by load_from_notion()
 
 RECIPES_DIR     = os.path.join(os.path.dirname(__file__), "recipes")
 RECIPES_NEW_DIR = os.path.join(os.path.dirname(__file__), "recipes_new")
@@ -433,6 +434,43 @@ main { max-width: 1100px; margin: 0 auto; padding: 48px 24px 80px; }
 .card-cat { font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--terracotta); font-weight: 700; margin-bottom: 3px; }
 .match-note { font-size: 0.78rem; color: var(--text-light); margin-top: 6px; line-height: 1.45; }
 .match-note mark, .recipe-card h3 mark { background: rgba(196,151,63,0.28); color: inherit; padding: 0 1px; border-radius: 2px; }
+.add-btn { display: block; margin: -14px auto 30px; background: none; border: 1px dashed var(--gold); color: var(--indigo); border-radius: 20px; padding: 8px 18px; font-family: 'Lato', sans-serif; font-weight: 700; font-size: 0.85rem; cursor: pointer; }
+.add-btn:hover { background: #fff; border-style: solid; }
+.recipe-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.edit-btn { margin-bottom: 28px; background: none; border: 1px solid var(--gold); color: var(--indigo); border-radius: 18px; padding: 6px 14px; font-family: 'Lato', sans-serif; font-weight: 700; font-size: 0.8rem; cursor: pointer; }
+.edit-btn:hover { background: #fff; }
+.form-card { background: #fff; max-width: 640px; margin: 0 auto; padding: 28px 32px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.06); }
+.form-card h2 { font-family: 'Playfair Display', serif; font-size: 1.8rem; color: var(--indigo); margin-bottom: 4px; }
+.form-sub { color: var(--text-light); font-size: 0.9rem; margin-bottom: 24px; }
+.ff { margin-bottom: 22px; }
+.fl { display: block; font-weight: 700; color: var(--indigo); font-size: 0.95rem; margin-bottom: 8px; }
+.fl .hint { font-weight: 400; color: #888; font-size: 0.8rem; margin-left: 6px; }
+.ff input[type=text], .ff input[type=password], .ff textarea { width: 100%; box-sizing: border-box; border: 1px solid #d9d2c3; border-radius: 8px; padding: 12px 14px; font-size: 16px; font-family: 'Lato', sans-serif; background: #FDFBF7; color: var(--text); }
+.ff textarea { min-height: 130px; line-height: 1.6; resize: vertical; }
+.ff input:focus, .ff textarea:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 3px rgba(196,151,63,0.2); }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { border: 1px solid #d9d2c3; background: #fff; border-radius: 22px; padding: 8px 15px; font-size: 0.9rem; cursor: pointer; font-family: 'Lato', sans-serif; color: var(--text); display: inline-flex; align-items: center; gap: 7px; }
+.chip.on { background: var(--indigo); border-color: var(--indigo); color: #fff; }
+.chip .pill-ico { background: #F4EFE4; }
+.kchips { gap: 20px; }
+.kchip { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 0.82rem; color: #666; cursor: pointer; background: none; border: none; font-family: 'Lato', sans-serif; padding: 2px; }
+.kchip .kbadge { width: 48px; height: 48px; font-size: 21px; }
+.kchip.on { color: var(--indigo); font-weight: 700; }
+.kchip.on .kbadge { box-shadow: 0 0 0 3px var(--gold); }
+.toggle { display: inline-flex; align-items: center; gap: 12px; cursor: pointer; font-size: 0.95rem; color: var(--text); }
+.toggle input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.switch { width: 46px; height: 26px; border-radius: 13px; background: #d9d2c3; position: relative; transition: background 0.15s; flex: none; }
+.switch::after { content: ""; position: absolute; left: 3px; top: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: left 0.15s; }
+.toggle input:checked + .switch { background: #2E8B3E; }
+.toggle input:checked + .switch::after { left: 23px; }
+.toggle input:focus-visible + .switch { box-shadow: 0 0 0 3px rgba(196,151,63,0.35); }
+.grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 520px) { .grid3 { grid-template-columns: 1fr; } .form-card { padding: 22px 18px; } }
+.form-error { color: #A32D2D; font-size: 0.92rem; min-height: 1.2em; margin-bottom: 10px; }
+.save-btn { width: 100%; background: var(--terracotta); color: #fff; border: none; border-radius: 10px; padding: 16px; font-size: 1.05rem; font-weight: 700; font-family: 'Lato', sans-serif; cursor: pointer; }
+.save-btn:hover { background: var(--terracotta-light); }
+.save-btn:disabled { opacity: 0.6; cursor: default; }
+.toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--indigo); color: #fff; padding: 12px 20px; border-radius: 10px; font-size: 0.92rem; box-shadow: 0 6px 20px rgba(0,0,0,0.2); z-index: 50; display: none; max-width: 90vw; text-align: center; }
 .legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px 22px; margin: 0 auto 18px; color: rgba(255,255,255,0.85); font-size: 0.82rem; letter-spacing: 0.02em; }
 .legend-item { display: inline-flex; align-items: center; gap: 7px; }
 .card-tags { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 8px 0 4px; }
@@ -503,6 +541,7 @@ footer { text-align: center; padding: 32px 24px; font-size: 0.8rem; color: rgba(
       <input id="search-input" class="search-input" type="text" placeholder="Search by recipe name or ingredient…" autocomplete="off" spellcheck="false" aria-label="Search recipes by name or ingredient">
       <button class="search-clear" id="search-clear" aria-label="Clear search">×</button>
     </div>
+    <button class="add-btn" onclick="showEditor()">＋ Add a recipe</button>
     <div id="search-results" style="display:none">
       <p class="search-meta" id="search-meta"></p>
       <div class="recipe-list" id="search-list"></div>
@@ -516,7 +555,10 @@ footer { text-align: center; padding: 32px 24px; font-size: 0.8rem; color: rgba(
     <div class="recipe-list" id="recipe-list"></div>
   </div>
   <div id="recipe-view" style="display:none">
-    <button class="back-btn" id="back-to-cat">← Back to Category</button>
+    <div class="recipe-top">
+      <button class="back-btn" id="back-to-cat">← Back to Category</button>
+      <button class="edit-btn" id="edit-recipe-btn">✎ Edit recipe</button>
+    </div>
     <div class="recipe-header">
       <h2 id="recipe-title"></h2>
       <div class="recipe-pills" id="recipe-pills"></div>
@@ -528,7 +570,34 @@ footer { text-align: center; padding: 32px 24px; font-size: 0.8rem; color: rgba(
       <ul id="recipe-notes-list"></ul>
     </div>
   </div>
+  <div id="edit-view" style="display:none">
+    <button class="back-btn" id="edit-back">← Cancel</button>
+    <div class="form-card">
+      <h2 id="edit-heading">Add a recipe</h2>
+      <p class="form-sub">Only the name, category and ingredients are required.</p>
+      <div class="ff"><label class="fl" for="f-name">Recipe name</label><input type="text" id="f-name" autocomplete="off"></div>
+      <div class="ff"><span class="fl">Category</span><div class="chips" id="f-folder"></div></div>
+      <div class="ff"><span class="fl">Cuisine</span><div class="chips" id="f-cuisine"></div></div>
+      <div class="ff"><span class="fl">Tradition<span class="hint">optional — when is it usually made?</span></span><div class="chips" id="f-tradition"></div></div>
+      <div class="ff"><span class="fl">Kashrut</span><div class="chips kchips" id="f-kashrut"></div></div>
+      <div class="ff"><label class="toggle"><input type="checkbox" id="f-vegan"><span class="switch"></span>Can be made vegan</label></div>
+      <div class="ff"><label class="fl" for="f-description">Description<span class="hint">optional</span></label><textarea id="f-description" style="min-height:70px"></textarea></div>
+      <div class="ff"><label class="fl" for="f-ingredients">Ingredients<span class="hint">one per line</span></label><textarea id="f-ingredients"></textarea></div>
+      <div class="ff"><label class="fl" for="f-steps">Steps<span class="hint">one step per line</span></label><textarea id="f-steps"></textarea></div>
+      <div class="ff grid3">
+        <div><label class="fl" for="f-prep">Prep time</label><input type="text" id="f-prep" placeholder="20 min"></div>
+        <div><label class="fl" for="f-cook">Cook time</label><input type="text" id="f-cook" placeholder="45 min"></div>
+        <div><label class="fl" for="f-yields">Serves</label><input type="text" id="f-yields" placeholder="8"></div>
+      </div>
+      <div class="ff"><label class="fl" for="f-from">From<span class="hint">whose recipe is it?</span></label><input type="text" id="f-from"></div>
+      <div class="ff"><label class="fl" for="f-notes">Notes<span class="hint">optional</span></label><textarea id="f-notes" style="min-height:70px"></textarea></div>
+      <div class="ff"><label class="fl" for="f-password">Family password</label><input type="password" id="f-password" autocomplete="current-password"></div>
+      <div class="form-error" id="form-error" role="alert"></div>
+      <button class="save-btn" id="save-btn" onclick="saveRecipe()">Save recipe</button>
+    </div>
+  </div>
 </main>
+<div class="toast" id="toast" role="status"></div>
 <footer class="tile-bg">
   <div class="legend" aria-label="Kashrut symbols">
     <span class="legend-item"><span class="kbadge k-meat">🥩</span>Meat</span>
@@ -555,11 +624,13 @@ const TRADITION_ICONS = {
   sun: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.6" fill="#E3A21A"/><g stroke="#E3A21A" stroke-width="1.8" stroke-linecap="round"><path d="M12 2.5V5"/><path d="M12 19V21.5"/><path d="M2.5 12H5"/><path d="M19 12H21.5"/><path d="M5.3 5.3L7 7"/><path d="M17 17L18.7 18.7"/><path d="M5.3 18.7L7 17"/><path d="M17 7L18.7 5.3"/></g></svg>',
   star: '<svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="#1E3A5F" stroke-width="1.6" stroke-linejoin="round"><path d="M12 3L19.8 16.5H4.2Z"/><path d="M12 21L4.2 7.5H19.8Z"/></g></svg>',
 };
+function traditionIcon(t) {
+  const k = String(t).toLowerCase();
+  return TRADITION_ICONS[/friday|erev|candle/.test(k) ? 'candles' : /passover|pesach/.test(k) ? 'matzah' : /shabbat|seudah|lunch/.test(k) ? 'sun' : 'star'];
+}
 function traditionPillHTML(t) {
   if (!t) return '';
-  const k = String(t).toLowerCase();
-  const icon = /friday|erev|candle/.test(k) ? 'candles' : /passover|pesach/.test(k) ? 'matzah' : /shabbat|seudah|lunch/.test(k) ? 'sun' : 'star';
-  return `<span class="pill pill-trad" title="Traditionally made for ${esc(t)}"><span class="pill-ico">${TRADITION_ICONS[icon]}</span>${esc(t)}</span>`;
+  return `<span class="pill pill-trad" title="Traditionally made for ${esc(t)}"><span class="pill-ico">${traditionIcon(t)}</span>${esc(t)}</span>`;
 }
 const CUISINE_ICONS = {
   sephardi: '<svg viewBox="0 0 24 24" aria-hidden="true"><g fill="#8B4513"><rect x="7.3" y="4" width="2.6" height="9" rx="1.3"/><rect x="10.7" y="2.2" width="2.6" height="10" rx="1.3"/><rect x="14.1" y="4" width="2.6" height="9" rx="1.3"/><path d="M6.6 10.5H17.4V16A5.4 5.4 0 0 1 6.6 16Z"/><path d="M7 15.6C5 14.8 3.6 13.2 3.1 11.2C2.9 10.2 4 9.7 4.7 10.5L7 13Z"/><path d="M17 15.6C19 14.8 20.4 13.2 20.9 11.2C21.1 10.2 20 9.7 19.3 10.5L17 13Z"/></g><ellipse cx="12" cy="15.6" rx="2.7" ry="1.6" fill="#fff"/><circle cx="12" cy="15.6" r="1.05" fill="#1E5AA8"/></svg>',
@@ -594,6 +665,7 @@ function dietBadgesHTML(r) {
 const DESCS = __DESCS_DATA__;
 
 function showHome(keepSearch) {
+  document.getElementById('edit-view').style.display = 'none';
   if (!keepSearch) clearSearch();
   document.getElementById('home-view').style.display = '';
   document.getElementById('category-view').style.display = 'none';
@@ -602,6 +674,7 @@ function showHome(keepSearch) {
   window.scrollTo(0, 0);
 }
 function showCategory(cat) {
+  document.getElementById('edit-view').style.display = 'none';
   const recipes = COOKBOOK[cat];
   document.getElementById('home-view').style.display = 'none';
   document.getElementById('category-view').style.display = '';
@@ -629,6 +702,8 @@ function showCategory(cat) {
 }
 
 function showRecipe(cat, idx) {
+  document.getElementById('edit-view').style.display = 'none';
+  document.getElementById('edit-recipe-btn').onclick = () => showEditor(cat, idx);
   const r = COOKBOOK[cat][idx];
   const view = document.getElementById('recipe-view');
   document.getElementById('home-view').style.display = 'none';
@@ -750,10 +825,14 @@ buildHome();
 const DIACRITICS = new RegExp('[' + String.fromCharCode(0x300) + '-' + String.fromCharCode(0x36f) + ']', 'g');
 function norm(s) { return String(s || '').toLowerCase().normalize('NFD').replace(DIACRITICS, ''); }
 const SEARCH_INDEX = [];
+function rebuildSearchIndex() {
+SEARCH_INDEX.length = 0;
 Object.keys(COOKBOOK).forEach(cat => COOKBOOK[cat].forEach((r, i) => {
   const ings = r.ingredients || [];
   SEARCH_INDEX.push({ cat, i, r, title: norm(r.title), trad: norm(r.tradition), ings: ings.map(norm), ingsRaw: ings });
 }));
+}
+rebuildSearchIndex();
 function highlight(text, terms) {
   // Highlight terms when normalizing didn't change the string length (keeps indexes aligned)
   const n = norm(text);
@@ -829,6 +908,138 @@ function runSearch(q) {
   input.addEventListener('keydown', ev => { if (ev.key === 'Escape') clearSearch(); });
   document.getElementById('search-clear').onclick = () => { clearSearch(); input.focus(); };
 })();
+
+// ── Add / edit recipes ──
+const OPTIONS = __OPTIONS_DATA__;
+const NL = String.fromCharCode(10);
+let editCtx = null;
+const OPTION_ORDER = {
+  Cuisine: ['Sephardi', 'Ashkenazi', 'Israeli', 'Yemeni', 'Other'],
+  Kashrut: ['Meat', 'Dairy', 'Fish', 'Pareve'],
+  Tradition: ['Friday Night', 'Shabbat Lunch', 'Holidays', 'Passover'],
+};
+const OPTION_HIDE = ['Uh Oh', 'Vegan'];
+function optList(name, fallback, keep) {
+  let o = (OPTIONS[name] || []).filter(v => !(name === 'Kashrut' && OPTION_HIDE.includes(v)) && v !== 'Uh Oh');
+  if (!o.length) o = fallback.slice();
+  const order = OPTION_ORDER[name] || [];
+  const rank = v => { const k = order.indexOf(v); return k === -1 ? (v === 'Other' ? 999 : 500) : k; };
+  o.sort((a, b) => rank(a) - rank(b));
+  if (keep && !o.includes(keep)) o.push(keep);
+  return o;
+}
+function renderChips(id, values, selected, opts) {
+  opts = opts || {};
+  const el = document.getElementById(id);
+  el.innerHTML = '';
+  el.dataset.value = selected || '';
+  values.forEach(v => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = opts.kashrut ? 'kchip' : 'chip';
+    b.innerHTML = opts.html ? opts.html(v) : esc(v);
+    b.setAttribute('aria-pressed', v === selected ? 'true' : 'false');
+    if (v === selected) b.classList.add('on');
+    b.onclick = () => {
+      const next = (el.dataset.value === v && !opts.required) ? '' : v;
+      el.dataset.value = next;
+      Array.from(el.children).forEach(c => { const on = (c === b && next === v); c.classList.toggle('on', on); c.setAttribute('aria-pressed', on ? 'true' : 'false'); });
+      document.getElementById('form-error').textContent = '';
+    };
+    el.appendChild(b);
+  });
+}
+const cuisineChip = v => `<span class="pill-ico">${CUISINE_ICONS[cuisineKey(v)] || CUISINE_ICONS.other}</span>${esc(v)}`;
+const tradChip = v => `<span class="pill-ico">${traditionIcon(v)}</span>${esc(v)}`;
+const kashrutChip = v => { const b = KASHRUT_BADGES[v.toLowerCase()]; return `<span class="kbadge ${b ? b.cls : 'k-pareve'}">${b ? b.sym : esc(v.charAt(0))}</span>${esc(v)}`; };
+function showEditor(cat, i) {
+  const r = (cat !== undefined && cat !== null) ? COOKBOOK[cat][i] : null;
+  editCtx = r ? { cat, i, id: r.id } : null;
+  ['home-view', 'category-view', 'recipe-view'].forEach(v => document.getElementById(v).style.display = 'none');
+  document.getElementById('edit-view').style.display = '';
+  document.getElementById('breadcrumb').classList.remove('visible');
+  document.getElementById('edit-heading').textContent = r ? 'Edit recipe' : 'Add a recipe';
+  const set = (id, v) => { document.getElementById(id).value = v || ''; };
+  const join = a => (a || []).join(NL);
+  set('f-name', r && r.title);
+  set('f-description', r && r.description);
+  set('f-ingredients', r && join(r.ingredients));
+  set('f-steps', r && join(r.steps));
+  set('f-notes', r && join(r.notes));
+  set('f-prep', r && r.prep_time);
+  set('f-cook', r && r.cook_time);
+  set('f-yields', r && r.yields);
+  set('f-from', r && r.from);
+  document.getElementById('f-vegan').checked = !!(r && r.vegan_option);
+  const folders = Object.keys(COOKBOOK).concat((OPTIONS.Folder || []).filter(f => !(f in COOKBOOK)));
+  renderChips('f-folder', folders, r ? cat : '', { required: true });
+  renderChips('f-cuisine', optList('Cuisine', ['Sephardi', 'Ashkenazi', 'Israeli', 'Other'], r && r.cuisine), r && r.cuisine, { html: cuisineChip });
+  renderChips('f-tradition', optList('Tradition', [], r && r.tradition), r && r.tradition, { html: tradChip });
+  renderChips('f-kashrut', optList('Kashrut', ['Meat', 'Dairy', 'Pareve'], r && r.kashrut), r && r.kashrut, { kashrut: true, html: kashrutChip });
+  try { document.getElementById('f-password').value = localStorage.getItem('cookbook-pw') || ''; } catch (e) {}
+  document.getElementById('form-error').textContent = '';
+  document.getElementById('edit-back').onclick = () => r ? showRecipe(cat, i) : showHome(true);
+  window.scrollTo(0, 0);
+}
+function formError(msg, focusId) {
+  document.getElementById('form-error').textContent = msg;
+  if (focusId) document.getElementById(focusId).focus();
+}
+async function saveRecipe() {
+  const g = id => document.getElementById(id).value.trim();
+  const chip = id => document.getElementById(id).dataset.value || null;
+  const fields = {
+    name: g('f-name'), folder: chip('f-folder'), cuisine: chip('f-cuisine'), tradition: chip('f-tradition'),
+    kashrut: chip('f-kashrut'), vegan_option: document.getElementById('f-vegan').checked,
+    description: g('f-description'), ingredients: g('f-ingredients'), steps: g('f-steps'), notes: g('f-notes'),
+    from: g('f-from'), prep_time: g('f-prep'), cook_time: g('f-cook'), yields: g('f-yields'),
+  };
+  const pw = document.getElementById('f-password').value;
+  if (!fields.name) return formError('Give the recipe a name.', 'f-name');
+  if (!fields.folder) return formError('Pick a category.');
+  if (!fields.ingredients) return formError('Add at least one ingredient.', 'f-ingredients');
+  if (!pw) return formError('Enter the family password.', 'f-password');
+  if (editCtx && !editCtx.id) return formError("This recipe can't be edited here yet. Please edit it in Notion.");
+  const btn = document.getElementById('save-btn');
+  btn.disabled = true; btn.textContent = 'Saving…';
+  try {
+    const res = await fetch('/.netlify/functions/recipe', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: pw, id: editCtx ? editCtx.id : null, fields }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Something went wrong. Try again.');
+    try { localStorage.setItem('cookbook-pw', pw); } catch (e) {}
+    applyLocal(fields, data.id);
+  } catch (e) {
+    formError(e instanceof TypeError ? "Couldn't reach the site. Check your connection and try again." : e.message);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Save recipe';
+  }
+}
+function applyLocal(f, id) {
+  const lines = s => s ? s.split(NL).map(x => x.trim()).filter(Boolean) : [];
+  const rec = editCtx ? COOKBOOK[editCtx.cat][editCtx.i] : {};
+  Object.assign(rec, {
+    id: id || rec.id, title: f.name, cuisine: f.cuisine, tradition: f.tradition, kashrut: f.kashrut,
+    vegan_option: f.vegan_option, description: f.description || null, ingredients: lines(f.ingredients),
+    steps: lines(f.steps), notes: lines(f.notes), from: f.from || null, prep_time: f.prep_time || null,
+    cook_time: f.cook_time || null, yields: f.yields || null, meta: [],
+  });
+  if (editCtx) COOKBOOK[editCtx.cat].splice(editCtx.i, 1);
+  if (!COOKBOOK[f.folder]) COOKBOOK[f.folder] = [];
+  COOKBOOK[f.folder].push(rec);
+  COOKBOOK[f.folder].sort((a, b) => a.title.toLowerCase().localeCompare(b.title.toLowerCase()));
+  rebuildSearchIndex();
+  showRecipe(f.folder, COOKBOOK[f.folder].indexOf(rec));
+  toast('Saved! Everyone will see it on the site in about a minute.');
+}
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.style.display = 'block';
+  clearTimeout(toast._t); toast._t = setTimeout(() => { t.style.display = 'none'; }, 6000);
+}
+document.getElementById('edit-view').addEventListener('input', () => { document.getElementById('form-error').textContent = ''; });
 </script>
 </body>
 </html>'''
@@ -878,6 +1089,14 @@ def load_from_notion():
             break
         cursor = data["next_cursor"]
 
+    # Select options (for the add/edit form)
+    schema = requests.get(f"https://api.notion.com/v1/databases/{NOTION_DB_ID}", headers=headers)
+    schema.raise_for_status()
+    for prop in ("Folder", "Cuisine", "Kashrut", "Tradition"):
+        p = schema.json()["properties"].get(prop, {})
+        if p.get("type") == "select":
+            NOTION_OPTIONS[prop] = [o["name"] for o in p["select"]["options"]]
+
     def get_text(props, name):
         p = props.get(name, {})
         t = p.get("type")
@@ -908,6 +1127,7 @@ def load_from_notion():
         notes_raw       = get_text(props, "Chef's Notes")
 
         recipe = {
+            "id":          page["id"],
             "title":       name,
             "cuisine":     get_select(props, "Cuisine"),
             "from":        get_text(props, "From") or None,
@@ -950,6 +1170,7 @@ def build(source="files"):
     html = html.replace("__COOKBOOK_DATA__", json.dumps(cookbook, ensure_ascii=False))
     html = html.replace("__ICONS_DATA__", json.dumps(CATEGORY_ICONS, ensure_ascii=False))
     html = html.replace("__DESCS_DATA__", json.dumps(CATEGORY_DESCRIPTIONS, ensure_ascii=False))
+    html = html.replace("__OPTIONS_DATA__", json.dumps(NOTION_OPTIONS, ensure_ascii=False))
 
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
         f.write(html)
