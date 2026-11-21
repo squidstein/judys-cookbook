@@ -419,6 +419,16 @@ main { max-width: 1100px; margin: 0 auto; padding: 48px 24px 80px; }
 .k-pareve { border-color: #C4973F; color: #7A5A1A; font-family: Georgia, 'Times New Roman', serif; font-size: 14px; }
 .k-vegan  { border-color: #2E8B3E; background: #2E8B3E; color: #fff; font-family: Georgia, 'Times New Roman', serif; font-size: 14px; }
 .recipe-pills { align-items: center; }
+.search-wrap { max-width: 560px; margin: 0 auto 32px; position: relative; }
+.search-input { width: 100%; padding: 14px 44px 14px 48px; border-radius: 30px; border: 1px solid rgba(0,0,0,0.12); font-family: 'Lato', sans-serif; font-size: 1rem; background: #fff; color: var(--text); box-shadow: 0 2px 8px rgba(0,0,0,0.05); -webkit-appearance: none; }
+.search-input:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 3px rgba(196,151,63,0.2); }
+.search-icon { position: absolute; left: 18px; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; color: var(--text-light); pointer-events: none; }
+.search-clear { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); border: none; background: none; font-size: 1.4rem; line-height: 1; padding: 4px 8px; color: var(--text-light); cursor: pointer; display: none; }
+.search-clear:hover { color: var(--terracotta); }
+.search-meta { text-align: center; color: var(--text-light); font-size: 0.88rem; margin-bottom: 18px; }
+.card-cat { font-size: 0.66rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--terracotta); font-weight: 700; margin-bottom: 3px; }
+.match-note { font-size: 0.78rem; color: var(--text-light); margin-top: 6px; line-height: 1.45; }
+.match-note mark, .recipe-card h3 mark { background: rgba(196,151,63,0.28); color: inherit; padding: 0 1px; border-radius: 2px; }
 .legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px 22px; margin: 0 auto 18px; color: rgba(255,255,255,0.85); font-size: 0.82rem; letter-spacing: 0.02em; }
 .legend-item { display: inline-flex; align-items: center; gap: 7px; }
 .card-tags { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 8px 0 4px; }
@@ -484,6 +494,15 @@ footer { text-align: center; padding: 32px 24px; font-size: 0.8rem; color: rgba(
     <h2>The Cookbook</h2>
     <p class="home-intro">From Moroccan boregas and preserved lemons to brisket, kugel, and challah —<br>these are the recipes that made our family table.</p>
     <div class="geo-divider">◆ ◇ ◆</div>
+    <div class="search-wrap">
+      <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+      <input id="search-input" class="search-input" type="text" placeholder="Search by recipe name or ingredient…" autocomplete="off" spellcheck="false" aria-label="Search recipes by name or ingredient">
+      <button class="search-clear" id="search-clear" aria-label="Clear search">×</button>
+    </div>
+    <div id="search-results" style="display:none">
+      <p class="search-meta" id="search-meta"></p>
+      <div class="recipe-list" id="search-list"></div>
+    </div>
     <div class="category-grid" id="category-grid"></div>
   </div>
   <div id="category-view" style="display:none">
@@ -551,7 +570,8 @@ function dietBadgesHTML(r) {
 }
 const DESCS = __DESCS_DATA__;
 
-function showHome() {
+function showHome(keepSearch) {
+  if (!keepSearch) clearSearch();
   document.getElementById('home-view').style.display = '';
   document.getElementById('category-view').style.display = 'none';
   document.getElementById('recipe-view').style.display = 'none';
@@ -601,6 +621,7 @@ function showRecipe(cat, idx) {
 
   document.getElementById('recipe-title').textContent = r.title;
   document.getElementById('back-to-cat').onclick = () => showCategory(cat);
+  document.getElementById('back-to-cat').textContent = '← Back to Category';
 
   // Pills
   const pillsDiv = document.getElementById('recipe-pills');
@@ -700,6 +721,87 @@ function buildHome() {
   });
 }
 buildHome();
+
+// ── Search ──
+const DIACRITICS = new RegExp('[' + String.fromCharCode(0x300) + '-' + String.fromCharCode(0x36f) + ']', 'g');
+function norm(s) { return String(s || '').toLowerCase().normalize('NFD').replace(DIACRITICS, ''); }
+const SEARCH_INDEX = [];
+Object.keys(COOKBOOK).forEach(cat => COOKBOOK[cat].forEach((r, i) => {
+  const ings = r.ingredients || [];
+  SEARCH_INDEX.push({ cat, i, r, title: norm(r.title), ings: ings.map(norm), ingsRaw: ings });
+}));
+function highlight(text, terms) {
+  // Highlight terms when normalizing didn't change the string length (keeps indexes aligned)
+  const n = norm(text);
+  if (n.length !== text.length) return esc(text);
+  const marks = new Array(text.length).fill(false);
+  terms.forEach(t => { let k = n.indexOf(t); while (k !== -1) { for (let j = k; j < k + t.length; j++) marks[j] = true; k = n.indexOf(t, k + t.length); } });
+  let out = '', open = false;
+  for (let j = 0; j < text.length; j++) {
+    if (marks[j] && !open) { out += '<mark>'; open = true; }
+    if (!marks[j] && open) { out += '</mark>'; open = false; }
+    out += esc(text[j]);
+  }
+  return out + (open ? '</mark>' : '');
+}
+function clearSearch() {
+  const input = document.getElementById('search-input');
+  if (input) input.value = '';
+  runSearch('');
+}
+function runSearch(q) {
+  const terms = norm(q).trim().split(' ').filter(Boolean);
+  const results = document.getElementById('search-results');
+  const grid = document.getElementById('category-grid');
+  document.getElementById('search-clear').style.display = q ? 'block' : 'none';
+  if (!terms.length) { results.style.display = 'none'; grid.style.display = ''; return; }
+  const hits = [];
+  SEARCH_INDEX.forEach(e => {
+    let score = 0;
+    const ok = terms.every(t => {
+      const inTitle = e.title.includes(t);
+      const inIng = e.ings.some(l => l.includes(t));
+      if (inTitle) score += e.title.startsWith(t) ? 20 : 10;
+      if (inIng) score += 1;
+      return inTitle || inIng;
+    });
+    if (!ok) return;
+    const lines = [];
+    e.ings.forEach((l, k) => { if (lines.length < 2 && terms.some(t => l.includes(t))) lines.push(e.ingsRaw[k]); });
+    hits.push({ e, score, lines });
+  });
+  hits.sort((a, b) => b.score - a.score || a.e.title.localeCompare(b.e.title));
+  const list = document.getElementById('search-list');
+  list.innerHTML = '';
+  hits.forEach(({ e, lines }) => {
+    const r = e.r;
+    const card = document.createElement('div');
+    card.className = 'recipe-card';
+    const tags = cuisinePillHTML(r.cuisine) + dietBadgesHTML(r);
+    const note = lines.length ? `<div class="match-note">Uses: ${lines.map(l => highlight(l, terms)).join(' · ')}</div>` : '';
+    card.innerHTML = `<div class="card-cat">${esc(e.cat)}</div><h3>${highlight(r.title, terms)}</h3>${tags ? `<div class="card-tags">${tags}</div>` : ''}${note}`;
+    card.onclick = () => {
+      showRecipe(e.cat, e.i);
+      const back = document.getElementById('back-to-cat');
+      back.textContent = '← Back to Search Results';
+      back.onclick = () => showHome(true);
+    };
+    list.appendChild(card);
+  });
+  const n = hits.length;
+  document.getElementById('search-meta').textContent = n
+    ? `${n} recipe${n === 1 ? '' : 's'} matching “${q.trim()}”`
+    : `No recipes found for “${q.trim()}” — try a single ingredient, like “lemon”.`;
+  grid.style.display = 'none';
+  results.style.display = '';
+}
+(function initSearch() {
+  const input = document.getElementById('search-input');
+  let timer;
+  input.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(() => runSearch(input.value), 120); });
+  input.addEventListener('keydown', ev => { if (ev.key === 'Escape') clearSearch(); });
+  document.getElementById('search-clear').onclick = () => { clearSearch(); input.focus(); };
+})();
 </script>
 </body>
 </html>'''
