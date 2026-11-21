@@ -43,6 +43,7 @@ export default async (req) => {
     await new Promise((r) => setTimeout(r, 800)); // slow down guessing
     return reply(401, { error: "That password didn't work." });
   }
+  if (body.action === "check") return reply(200, { ok: true });
   if (!process.env.NOTION_TOKEN) return reply(500, { error: "The site isn't connected to Notion yet." });
 
   const f = body.fields || {};

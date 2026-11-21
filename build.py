@@ -470,6 +470,19 @@ main { max-width: 1100px; margin: 0 auto; padding: 48px 24px 80px; }
 .save-btn { width: 100%; background: var(--terracotta); color: #fff; border: none; border-radius: 10px; padding: 16px; font-size: 1.05rem; font-weight: 700; font-family: 'Lato', sans-serif; cursor: pointer; }
 .save-btn:hover { background: var(--terracotta-light); }
 .save-btn:disabled { opacity: 0.6; cursor: default; }
+.add-btn, .edit-btn { display: none; }
+body.signed-in .add-btn { display: block; }
+body.signed-in .edit-btn { display: inline-block; }
+.auth-link { background: none; border: none; color: rgba(255,255,255,0.6); font-family: 'Lato', sans-serif; font-size: 0.78rem; cursor: pointer; text-decoration: underline; padding: 4px; margin-top: 6px; }
+.auth-link:hover { color: #fff; }
+.modal-bg { position: fixed; inset: 0; background: rgba(20,30,50,0.55); display: none; align-items: center; justify-content: center; z-index: 60; padding: 20px; }
+.modal-bg.open { display: flex; }
+.modal { background: #fff; border-radius: 12px; padding: 26px 28px; width: 100%; max-width: 380px; box-shadow: 0 12px 40px rgba(0,0,0,0.25); }
+.modal h3 { font-family: 'Playfair Display', serif; color: var(--indigo); font-size: 1.4rem; margin-bottom: 4px; }
+.modal p { color: var(--text-light); font-size: 0.88rem; margin-bottom: 16px; }
+.modal-actions { display: flex; gap: 10px; margin-top: 4px; }
+.modal-actions .save-btn { padding: 12px; font-size: 0.95rem; }
+.cancel-btn { background: none; border: 1px solid #d9d2c3; border-radius: 10px; padding: 12px 18px; font-family: 'Lato', sans-serif; font-weight: 700; color: var(--text-light); cursor: pointer; }
 .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: var(--indigo); color: #fff; padding: 12px 20px; border-radius: 10px; font-size: 0.92rem; box-shadow: 0 6px 20px rgba(0,0,0,0.2); z-index: 50; display: none; max-width: 90vw; text-align: center; }
 .legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px 22px; margin: 0 auto 18px; color: rgba(255,255,255,0.85); font-size: 0.82rem; letter-spacing: 0.02em; }
 .legend-item { display: inline-flex; align-items: center; gap: 7px; }
@@ -591,13 +604,21 @@ footer { text-align: center; padding: 32px 24px; font-size: 0.8rem; color: rgba(
       </div>
       <div class="ff"><label class="fl" for="f-from">From<span class="hint">whose recipe is it?</span></label><input type="text" id="f-from"></div>
       <div class="ff"><label class="fl" for="f-notes">Notes<span class="hint">optional</span></label><textarea id="f-notes" style="min-height:70px"></textarea></div>
-      <div class="ff"><label class="fl" for="f-password">Family password</label><input type="password" id="f-password" autocomplete="current-password"></div>
       <div class="form-error" id="form-error" role="alert"></div>
       <button class="save-btn" id="save-btn" onclick="saveRecipe()">Save recipe</button>
     </div>
   </div>
 </main>
 <div class="toast" id="toast" role="status"></div>
+<div class="modal-bg" id="signin-modal" role="dialog" aria-modal="true" aria-labelledby="signin-title">
+  <div class="modal">
+    <h3 id="signin-title">Family sign-in</h3>
+    <p>Enter the family password to add and edit recipes on this device.</p>
+    <div class="ff" style="margin-bottom:10px"><label class="fl" for="signin-pw">Password</label><input type="password" id="signin-pw" autocomplete="current-password"></div>
+    <div class="form-error" id="signin-error" role="alert"></div>
+    <div class="modal-actions"><button class="cancel-btn" type="button" onclick="closeSignIn()">Cancel</button><button class="save-btn" id="signin-btn" type="button" onclick="signIn()">Sign in</button></div>
+  </div>
+</div>
 <footer class="tile-bg">
   <div class="legend" aria-label="Kashrut symbols">
     <span class="legend-item"><span class="kbadge k-meat">🥩</span>Meat</span>
@@ -606,6 +627,7 @@ footer { text-align: center; padding: 32px 24px; font-size: 0.8rem; color: rgba(
     <span class="legend-item"><span class="kbadge k-pareve">U</span>Pareve</span>
     <span class="legend-item"><span class="kbadge k-vegan">V</span>Vegan option</span>
   </div>
+  <p id="auth-line"><button class="auth-link" id="auth-link" type="button" onclick="authClick()">Family sign-in</button></p>
   <p>Made with love for Judy Goldberg-Hazan &nbsp;·&nbsp; A Family Heirloom</p>
 </footer>
 <script>
@@ -976,7 +998,6 @@ function showEditor(cat, i) {
   renderChips('f-cuisine', optList('Cuisine', ['Sephardi', 'Ashkenazi', 'Israeli', 'Other'], r && r.cuisine), r && r.cuisine, { html: cuisineChip });
   renderChips('f-tradition', optList('Tradition', [], r && r.tradition), r && r.tradition, { html: tradChip });
   renderChips('f-kashrut', optList('Kashrut', ['Meat', 'Dairy', 'Pareve'], r && r.kashrut), r && r.kashrut, { kashrut: true, html: kashrutChip });
-  try { document.getElementById('f-password').value = localStorage.getItem('cookbook-pw') || ''; } catch (e) {}
   document.getElementById('form-error').textContent = '';
   document.getElementById('edit-back').onclick = () => r ? showRecipe(cat, i) : showHome(true);
   window.scrollTo(0, 0);
@@ -994,11 +1015,11 @@ async function saveRecipe() {
     description: g('f-description'), ingredients: g('f-ingredients'), steps: g('f-steps'), notes: g('f-notes'),
     from: g('f-from'), prep_time: g('f-prep'), cook_time: g('f-cook'), yields: g('f-yields'),
   };
-  const pw = document.getElementById('f-password').value;
+  const pw = getPw();
   if (!fields.name) return formError('Give the recipe a name.', 'f-name');
   if (!fields.folder) return formError('Pick a category.');
   if (!fields.ingredients) return formError('Add at least one ingredient.', 'f-ingredients');
-  if (!pw) return formError('Enter the family password.', 'f-password');
+  if (!pw) { openSignIn(); return formError('Sign in first, then save again.'); }
   if (editCtx && !editCtx.id) return formError("This recipe can't be edited here yet. Please edit it in Notion.");
   const btn = document.getElementById('save-btn');
   btn.disabled = true; btn.textContent = 'Saving…';
@@ -1008,8 +1029,8 @@ async function saveRecipe() {
       body: JSON.stringify({ password: pw, id: editCtx ? editCtx.id : null, fields }),
     });
     const data = await res.json().catch(() => ({}));
+    if (res.status === 401) { setPw(null); openSignIn(); throw new Error('Your sign-in has expired. Sign in again, then save.'); }
     if (!res.ok) throw new Error(data.error || 'Something went wrong. Try again.');
-    try { localStorage.setItem('cookbook-pw', pw); } catch (e) {}
     applyLocal(fields, data.id);
   } catch (e) {
     formError(e instanceof TypeError ? "Couldn't reach the site. Check your connection and try again." : e.message);
@@ -1039,6 +1060,44 @@ function toast(msg) {
   t.textContent = msg; t.style.display = 'block';
   clearTimeout(toast._t); toast._t = setTimeout(() => { t.style.display = 'none'; }, 6000);
 }
+// ── Family sign-in ──
+let memPw = null;
+function getPw() { try { return localStorage.getItem('cookbook-pw') || memPw; } catch (e) { return memPw; } }
+function setPw(pw) {
+  memPw = pw;
+  try { if (pw) localStorage.setItem('cookbook-pw', pw); else localStorage.removeItem('cookbook-pw'); } catch (e) {}
+  document.body.classList.toggle('signed-in', !!pw);
+  document.getElementById('auth-link').textContent = pw ? 'Signed in for editing · Sign out' : 'Family sign-in';
+}
+function authClick() {
+  if (getPw()) { setPw(null); if (document.getElementById('edit-view').style.display !== 'none') showHome(true); toast('Signed out.'); }
+  else openSignIn();
+}
+function openSignIn() {
+  document.getElementById('signin-pw').value = '';
+  document.getElementById('signin-error').textContent = '';
+  document.getElementById('signin-modal').classList.add('open');
+  setTimeout(() => document.getElementById('signin-pw').focus(), 50);
+}
+function closeSignIn() { document.getElementById('signin-modal').classList.remove('open'); }
+async function signIn() {
+  const pw = document.getElementById('signin-pw').value;
+  const err = document.getElementById('signin-error');
+  if (!pw) { err.textContent = 'Enter the password.'; return; }
+  const btn = document.getElementById('signin-btn');
+  btn.disabled = true; btn.textContent = 'Checking…';
+  try {
+    const res = await fetch('/.netlify/functions/recipe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: pw, action: 'check' }) });
+    if (res.status === 401) { err.textContent = "That password didn't work."; return; }
+    if (!res.ok) { err.textContent = 'Something went wrong. Try again.'; return; }
+    setPw(pw); closeSignIn(); toast('Signed in. You can now add and edit recipes.');
+  } catch (e) {
+    err.textContent = "Couldn't reach the site. Check your connection and try again.";
+  } finally { btn.disabled = false; btn.textContent = 'Sign in'; }
+}
+document.getElementById('signin-pw').addEventListener('keydown', ev => { if (ev.key === 'Enter') signIn(); if (ev.key === 'Escape') closeSignIn(); });
+document.getElementById('signin-modal').addEventListener('click', ev => { if (ev.target.id === 'signin-modal') closeSignIn(); });
+setPw(getPw());
 document.getElementById('edit-view').addEventListener('input', () => { document.getElementById('form-error').textContent = ''; });
 </script>
 </body>
