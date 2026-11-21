@@ -405,11 +405,13 @@ main { max-width: 1100px; margin: 0 auto; padding: 48px 24px 80px; }
 .pill-yields  { background: var(--cream-dark); color: var(--text-light); }
 .pill-kashrut { background: #2C5F2E; color: #fff; }
 .pill-cuisine { padding-left: 4px; }
-.pill-cuisine.c-sephardi  { background: #8B4513; }
-.pill-cuisine.c-ashkenazi { background: #1F4225; }
-.pill-cuisine.c-israeli   { background: #1E3A5F; }
-.pill-cuisine.c-yemeni    { background: #7A2E3A; }
-.pill-cuisine.c-other     { background: #6B5E4E; }
+.pill-cuisine.c-sephardi  { background: #F3E3D6; color: #7A3A12; }
+.pill-cuisine.c-ashkenazi { background: #E2EBE0; color: #1F4225; }
+.pill-cuisine.c-israeli   { background: #E1E8F2; color: #1E3A5F; }
+.pill-cuisine.c-yemeni    { background: #F2E0E3; color: #7A2E3A; }
+.pill-cuisine.c-other     { background: #ECE7DF; color: #5A4A3A; }
+.pill-cuisine .pill-ico   { background: #fff; }
+.recipe-card { border-left-width: 5px; }
 .pill-ico { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 50%; background: #FBF6EC; flex: none; font-size: 11px; line-height: 1; }
 .pill-ico svg { width: 16px; height: 16px; display: block; }
 .kbadge { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; border: 2px solid; background: #fff; flex: none; font-size: 13px; font-weight: 800; line-height: 1; }
@@ -538,6 +540,13 @@ footer { text-align: center; padding: 32px 24px; font-size: 0.8rem; color: rgba(
 <script>
 const COOKBOOK = __COOKBOOK_DATA__;
 const ICONS = __ICONS_DATA__;
+const CATEGORY_COLORS = {
+  'Appetizers': '#7A8B3C', 'Chicken': '#D9A21B', 'Fish': '#2A7F86', 'Meat': '#8E2C3A',
+  'Soups & Stews': '#C0532E', 'Salads & Vegetables': '#4E8A47', 'Potatoes & Pasta': '#C9A35B',
+  'Muffins & Breads': '#8B5E3C', 'Desserts': '#C0607A', 'Cookies & Cakes': '#C0607A',
+  'Passover': '#5B4B8A', 'Special': '#4A5A6A',
+};
+function catColor(cat) { return CATEGORY_COLORS[cat] || '#C4973F'; }
 const CUISINE_ICONS = {
   sephardi: '<svg viewBox="0 0 24 24" aria-hidden="true"><g fill="#8B4513"><rect x="7.3" y="4" width="2.6" height="9" rx="1.3"/><rect x="10.7" y="2.2" width="2.6" height="10" rx="1.3"/><rect x="14.1" y="4" width="2.6" height="9" rx="1.3"/><path d="M6.6 10.5H17.4V16A5.4 5.4 0 0 1 6.6 16Z"/><path d="M7 15.6C5 14.8 3.6 13.2 3.1 11.2C2.9 10.2 4 9.7 4.7 10.5L7 13Z"/><path d="M17 15.6C19 14.8 20.4 13.2 20.9 11.2C21.1 10.2 20 9.7 19.3 10.5L17 13Z"/></g><ellipse cx="12" cy="15.6" rx="2.7" ry="1.6" fill="#fff"/><circle cx="12" cy="15.6" r="1.05" fill="#1E5AA8"/></svg>',
   ashkenazi: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.8 16.2C6.6 12 7.2 8.6 8.6 7.4C9.8 6.4 10.9 7.6 12 7.6C13.1 7.6 14.2 6.4 15.4 7.4C16.8 8.6 17.4 12 17.2 16.2Z" fill="#111"/><rect x="6.8" y="13.4" width="10.4" height="1.8" fill="#444"/><ellipse cx="12" cy="16.8" rx="10.2" ry="2.3" fill="#111"/></svg>',
@@ -590,6 +599,7 @@ function showCategory(cat) {
   recipes.forEach((r, i) => {
     const card = document.createElement('div');
     card.className = 'recipe-card';
+    card.style.borderLeftColor = catColor(cat);
     const tags = cuisinePillHTML(r.cuisine) + dietBadgesHTML(r);
     const cuisineBadge = tags ? `<div class="card-tags">${tags}</div>` : '';
     const fromText = r.from ? `<div class="recipe-meta-preview">From: ${esc(r.from)}</div>` : (r.meta && r.meta.length ? `<div class="recipe-meta-preview">${esc(r.meta[0])}</div>` : '');
@@ -779,7 +789,8 @@ function runSearch(q) {
     card.className = 'recipe-card';
     const tags = cuisinePillHTML(r.cuisine) + dietBadgesHTML(r);
     const note = lines.length ? `<div class="match-note">Uses: ${lines.map(l => highlight(l, terms)).join(' · ')}</div>` : '';
-    card.innerHTML = `<div class="card-cat">${esc(e.cat)}</div><h3>${highlight(r.title, terms)}</h3>${tags ? `<div class="card-tags">${tags}</div>` : ''}${note}`;
+    card.style.borderLeftColor = catColor(e.cat);
+    card.innerHTML = `<div class="card-cat" style="color:${catColor(e.cat)}">${esc(e.cat)}</div><h3>${highlight(r.title, terms)}</h3>${tags ? `<div class="card-tags">${tags}</div>` : ''}${note}`;
     card.onclick = () => {
       showRecipe(e.cat, e.i);
       const back = document.getElementById('back-to-cat');
